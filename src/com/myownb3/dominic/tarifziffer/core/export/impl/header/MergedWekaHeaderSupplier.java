@@ -5,12 +5,13 @@ import java.util.List;
 import com.myownb3.dominic.invoice.attrs.metadata.InvoiceAttr;
 import com.myownb3.dominic.invoice.attrs.metadata.constants.InvoiceAttrs;
 import com.myownb3.dominic.invoice.attrs.metadata.type.ContentType;
+import com.myownb3.dominic.tarifziffer.weka.WekaConstants;
 
 public class MergedWekaHeaderSupplier extends WekaHeaderSupplier {
 
    @Override
    protected String getTypeRep(InvoiceAttr invoiceAttr) {
-      return NUMERIC;// in a merged export, the categorical values are converted into numeric ones
+      return WekaConstants.NUMERIC;// in a merged export, the categorical values are converted into numeric ones
    }
 
    @Override
@@ -19,7 +20,7 @@ public class MergedWekaHeaderSupplier extends WekaHeaderSupplier {
    }
 
    private List<InvoiceAttr> evalAllInvoiceAttrsIncCategoricalValues4AtAttributeAnnotation(ContentType contentType) {
-      List<InvoiceAttr> allInvoiceAttrs = InvoiceAttrs.getAllRelevantInvoiceAttrs(contentType);
-      return InvoiceAttrs.evalAllInvoiceAttrsIncludingCategoricalValues(allInvoiceAttrs);
+      List<InvoiceAttr> allInvoiceAttrs = InvoiceAttrs.INSTANCE.getAllRelevantInvoiceAttrs(contentType);
+      return InvoiceAttrs.INSTANCE.evalAllInvoiceAttrsIncludingCategoricalValues(allInvoiceAttrs, true);
    }
 }

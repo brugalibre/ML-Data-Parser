@@ -23,7 +23,7 @@ public class XMLPatientContentCollector implements XMLContentCollector {
       for (int i = 0; i < attributes.getLength(); i++) {
          String qName = attributes.getQName(i);
          if (isGenderOrBirthdateValue(qName)) {
-            InvoiceAttr invoiceAttr = InvoiceAttrs.buildInvoiceAttr(qName, attributes.getValue(i));
+            InvoiceAttr invoiceAttr = InvoiceAttrs.INSTANCE.buildInvoiceAttr(qName, attributes.getValue(i));
             invoiceAttrs.add(invoiceAttr);
          }
       }

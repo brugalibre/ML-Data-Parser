@@ -20,5 +20,5 @@ public interface InvoicesFeatureEngineerer {
     *        the given result as a {@link XMLFileParseResult}
     * @return a copy of the given {@link XMLFileParseResult}s with additionally features
     */
-   public List<XMLFileParseResult> doFeatureIngeneering(List<XMLFileParseResult> result);
+   public List<XMLFileParseResult> doFeatureEngineering(List<XMLFileParseResult> result);
 }

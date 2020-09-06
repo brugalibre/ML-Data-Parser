@@ -22,7 +22,7 @@ public class XMLInvoiceBalanceContentCollector implements XMLContentCollector {
       for (int i = 0; i < attributes.getLength(); i++) {
          String qName = attributes.getQName(i);
          if (isAmountValue(qName)) {
-            InvoiceAttr invoiceAttr = InvoiceAttrs.buildInvoiceAttr(INVOICE_SUFFIX + qName, attributes.getValue(i));
+            InvoiceAttr invoiceAttr = InvoiceAttrs.INSTANCE.buildInvoiceAttr(INVOICE_SUFFIX + qName, attributes.getValue(i));
             invoiceAttrs.add(invoiceAttr);
          }
       }

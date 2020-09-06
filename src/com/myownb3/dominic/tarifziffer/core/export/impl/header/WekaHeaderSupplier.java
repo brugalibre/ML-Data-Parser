@@ -8,16 +8,18 @@ import java.util.function.Supplier;
 
 import org.apache.log4j.Logger;
 
-import com.myownb3.dominic.invoice.attrs.constants.InvoiceConstants;
 import com.myownb3.dominic.invoice.attrs.metadata.InvoiceAttr;
 import com.myownb3.dominic.invoice.attrs.metadata.NominalInvoiceAttr;
 import com.myownb3.dominic.invoice.attrs.metadata.constants.InvoiceAttrs;
 import com.myownb3.dominic.invoice.attrs.metadata.type.ContentType;
+import com.myownb3.dominic.tarifziffer.label.LabelEvaluator;
+import com.myownb3.dominic.tarifziffer.logging.LoggerHelper;
+import com.myownb3.dominic.tarifziffer.random.RandomNumber;
+import com.myownb3.dominic.tarifziffer.weka.WekaConstants;
 
 public class WekaHeaderSupplier implements Supplier<List<String>> {
 
-   protected static final String NUMERIC = "numeric";
-   private static Logger LOG = Logger.getLogger(WekaHeaderSupplier.class);
+   private static final Logger LOG = Logger.getLogger(WekaHeaderSupplier.class);
 
    @Override
    public List<String> get() {
@@ -25,17 +27,18 @@ public class WekaHeaderSupplier implements Supplier<List<String>> {
    }
 
    protected List<String> evalHeader() {
-      LOG.info("Start collecting weka header informations");
+      int id = RandomNumber.getNext();
+      LoggerHelper.INSTANCE.startLogInfo(LOG, "Start collecting weka header informations", id);
       List<String> headerContent = new ArrayList<>();
-      headerContent.add("@relation invoice-data" + "\n");
-      headerContent.add("\n");
+      headerContent.add(WekaConstants.AT_RELATION + " " + WekaConstants.RELATION_NAME + System.lineSeparator());
+      headerContent.add(System.lineSeparator());
       for (ContentType contentType : ContentType.getOrderedHeaderContentTypes()) {
          addAtAttributeAnnotation4ContentType(headerContent, contentType);
       }
       addAtAttributeAnnotation4ContentType(headerContent, ContentType.SERVICES_DATA);
-      headerContent.add("@attribute" + " classification " + buildPossibleValuesRep(InvoiceConstants.LABELS));
-      headerContent.add("\n" + "@data" + "\n");
-      LOG.info("Done collecting weka header informations");
+      headerContent.add(buildLabelRep());
+      headerContent.add(System.lineSeparator() + WekaConstants.AT_DATA + System.lineSeparator());
+      LoggerHelper.INSTANCE.endLogInfo(LOG, "Done collecting weka header informations %s\n", id);
       return headerContent;
    }
 
@@ -48,19 +51,19 @@ public class WekaHeaderSupplier implements Supplier<List<String>> {
    private Consumer<InvoiceAttr> addAtAttribute(List<String> headerContent) {
       return invoiceAttr -> {
          String typeRep = getTypeRep(invoiceAttr);
-         headerContent.add("@attribute " + invoiceAttr.getName() + " " + typeRep + "\n");
+         headerContent.add(WekaConstants.AT_ATTRIBUTE + " " + invoiceAttr.getName() + " " + typeRep + System.lineSeparator());
       };
    }
 
    protected List<InvoiceAttr> evalAllInvoiceAttrs4AtAttributeAnnotation(ContentType contentType) {
-      return InvoiceAttrs.getAllRelevantInvoiceAttrs(contentType);
+      return InvoiceAttrs.INSTANCE.getAllRelevantInvoiceAttrs(contentType);
    }
 
    protected String getTypeRep(InvoiceAttr invoiceAttr) {
       if (isNumeric(invoiceAttr)) {
-         return NUMERIC;
+         return WekaConstants.NUMERIC;
       } else if (invoiceAttr.isNominal()) {
-         return buildPossibleValuesRep(((NominalInvoiceAttr) invoiceAttr).getCategoricalValues());
+         return buildCategoricalValuesRep(((NominalInvoiceAttr) invoiceAttr).getCategoricalValues());
       }
       throw new IllegalStateException("Attribute '" + invoiceAttr + "' not handled!");
    }
@@ -69,12 +72,18 @@ public class WekaHeaderSupplier implements Supplier<List<String>> {
       return invoiceAttr.isDouble() || invoiceAttr.isInteger();
    }
 
-   private static String buildPossibleValuesRep(List<String> possibleValuesAsList) {
-      String rep = "";
+   private static String buildCategoricalValuesRep(List<String> possibleValuesAsList) {
+      StringBuilder sb = new StringBuilder();
       for (Iterator<String> iterator = possibleValuesAsList.iterator(); iterator.hasNext();) {
          String value = iterator.next();
-         rep += value + (iterator.hasNext() ? "," : "");
+         sb.append(value + (iterator.hasNext() ? WekaConstants.LINE_DELIMITER : ""));
       }
-      return "{" + rep + "}";
+      return String.format(WekaConstants.CATEGORICAL_VALUES_PATTERN, sb.toString());
    }
+
+   private static String buildLabelRep() {
+      String categoricalValuesRep = buildCategoricalValuesRep(LabelEvaluator.INSTANCE.getLabels());
+      return WekaConstants.AT_ATTRIBUTE + " " + WekaConstants.CLASSIFIER_ID + " " + categoricalValuesRep;
+   }
+
 }

@@ -2,6 +2,8 @@
 package com.myownb3.dominic.tarifziffer.io;
 
 import java.io.File;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 
 import javax.swing.filechooser.FileSystemView;
 
@@ -18,5 +20,13 @@ public class FileSystemUtil {
       FileSystemView filesys = FileSystemView.getFileSystemView();
       File homeDirectory = filesys.getHomeDirectory();
       return homeDirectory.getPath();
+   }
+
+   /**
+    * @return the default {@link FileSystem} separator depending on the current OS
+    */
+   public static String getDefaultFileSystemSeparator() {
+      FileSystem fileSystem = FileSystems.getDefault();
+      return fileSystem.getSeparator();
    }
 }

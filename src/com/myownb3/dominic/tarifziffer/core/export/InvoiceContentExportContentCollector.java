@@ -16,14 +16,4 @@ public interface InvoiceContentExportContentCollector {
     * @return the collected content as a {@link List} of {@link String}s
     */
    List<String> collectContent();
-
-   /**
-    * @return the name of the file for which this {@link InvoiceContentExportContentCollector} collects the content
-    */
-   String getExportFileName();
-
-   /**
-    * @return the file extension
-    */
-   String getFileExtension();
 }

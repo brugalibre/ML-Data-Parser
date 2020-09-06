@@ -23,13 +23,13 @@ public class XMLTreatmentContentCollector implements XMLContentCollector {
       for (int i = 0; i < attributes.getLength(); i++) {
          String qName = attributes.getQName(i);
          if (isTreatmentValue(qName)) {
-            InvoiceAttr invoiceAttr = InvoiceAttrs.buildInvoiceAttr(TREATMENT_SUFFIX + qName, attributes.getValue(i));
+            InvoiceAttr invoiceAttr = InvoiceAttrs.INSTANCE.buildInvoiceAttr(TREATMENT_SUFFIX + qName, attributes.getValue(i));
             invoiceAttrs.add(invoiceAttr);
          }
       }
       if (isAmbulatoryOrStationaryType(parentQName)) {
          String value = parentQName.replace(InvoiceXMLConstants.INVOICE_PREFIX, "");
-         InvoiceAttr invoiceAttr = InvoiceAttrs.buildInvoiceAttr(TREATMENT_TYPE, value);
+         InvoiceAttr invoiceAttr = InvoiceAttrs.INSTANCE.buildInvoiceAttr(TREATMENT_TYPE, value);
          invoiceAttrs.add(invoiceAttr);
       }
       return new LineContentImpl(invoiceAttrs);

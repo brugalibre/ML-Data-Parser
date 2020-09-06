@@ -15,23 +15,16 @@ public class TarifzifferCounterExportContentCollectorImpl extends AbstractInvoic
 
    @Override
    public List<String> collectContent() {
-      String title = "Total XML-Files die Tarifziffer '" + tarifZiffer + "' enthalten: '" + result.size() + "'\n\n";
-      String headerLine = "File; Anzahl Vorkommen der Tarifziffer '" + tarifZiffer + "\n";
+      beforeCollecting();
+      String nl = System.lineSeparator();
+      String title = "Total XML-Files die Tarifziffer '" + tarifZiffer + "' enthalten: '" + result.size() + "'" + nl + nl;
+      String headerLine = "File; Anzahl Vorkommen der Tarifziffer '" + tarifZiffer + nl;
       List<String> fileContent = result.stream()
             .map(XMLFileParseResult::createExportMsg)
             .collect(Collectors.toList());
       fileContent.add(0, headerLine);
       fileContent.add(0, title);
+      afterCollecting();
       return fileContent;
-   }
-
-   @Override
-   public String getExportFileName() {
-      return "Auswertung XMLs mit Tarifziffer";
-   }
-
-   @Override
-   public String getFileExtension() {
-      return "csv";
    }
 }

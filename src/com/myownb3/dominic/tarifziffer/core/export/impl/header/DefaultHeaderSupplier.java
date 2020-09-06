@@ -27,13 +27,13 @@ public class DefaultHeaderSupplier implements Supplier<List<String>> {
    }
 
    private String buildDefaultHeader() {
-      List<String> keys = InvoiceAttrs.getAllInvoiceAttrsNames(ContentType.SERVICES_DATA, exportMode.isRawExport());
+      List<String> keys = InvoiceAttrs.INSTANCE.getAllInvoiceAttrsNames(ContentType.SERVICES_DATA, exportMode.isRawExport());
       List<String> allKeys = new LinkedList<>();
       for (ContentType contentType : ContentType.getOrderedHeaderContentTypes()) {
-         allKeys.addAll(InvoiceAttrs.getAllInvoiceAttrsNames(contentType, exportMode.isRawExport()));
+         allKeys.addAll(InvoiceAttrs.INSTANCE.getAllInvoiceAttrsNames(contentType, exportMode.isRawExport()));
       }
       allKeys.addAll(keys);
       String lineDelimiter = exportMode.getLineDelimiter();
-      return "XML-File" + lineDelimiter + KeyValue2StringUtil.toString(allKeys, lineDelimiter) + "\n";
+      return "XML-File" + lineDelimiter + KeyValue2StringUtil.toString(allKeys, lineDelimiter) + System.lineSeparator();
    }
 }

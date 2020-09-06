@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import com.myownb3.dominic.invoice.attrs.metadata.InvoiceAttr;
 import com.myownb3.dominic.tarifziffer.core.parse.result.LineContent;
 import com.myownb3.dominic.tarifziffer.core.parse.result.impl.XMLFileParseResult;
 
@@ -21,6 +22,20 @@ public class ContentUtil {
    }
 
    /**
+    * Return all {@link InvoiceAttr}s for the given {@link XMLFileParseResult}<
+    * 
+    * @param xmlFileParseResult
+    * @return all {@link InvoiceAttr}s for the given {@link XMLFileParseResult}<
+    */
+   public static List<InvoiceAttr> getAllInvoiceAttrs4File(XMLFileParseResult xmlFileParseResult) {
+      return xmlFileParseResult.getContent()
+            .stream()
+            .map(LineContent::getInvoiceAttrs)
+            .flatMap(List::stream)
+            .collect(Collectors.toList());
+   }
+
+   /**
     * Return all {@link LineContent} which are services content
     * 
     * @see LineContent#isServicesContent()
@@ -29,7 +44,7 @@ public class ContentUtil {
     * @return all {@link LineContent} which are services content
     */
    public static List<LineContent> getServicesLineContent(XMLFileParseResult xmlFileParseResult) {
-      return filterContent4Type(xmlFileParseResult, LineContent::isServicesContent);
+      return filterContent4Type(xmlFileParseResult.getContent(), LineContent::isServicesContent);
    }
 
    /**
@@ -54,8 +69,7 @@ public class ContentUtil {
     * @return all {@link LineContent} which are header content
     */
    public static List<LineContent> getInvoiceHeaderContent(XMLFileParseResult xmlFileParseResult) {
-      Predicate<LineContent> isServiceContent = LineContent::isServicesContent;
-      return filterContent4Type(xmlFileParseResult, isServiceContent.negate());
+      return getInvoiceHeaderContent(xmlFileParseResult.getContent());
    }
 
    /**
@@ -69,17 +83,15 @@ public class ContentUtil {
     */
    public static List<LineContent> getInvoiceHeaderContent(List<LineContent> lineContents) {
       Predicate<LineContent> isServiceContent = LineContent::isServicesContent;
-      return filterContent4Type(lineContents, isServiceContent.negate());
-   }
-
-   private static List<LineContent> filterContent4Type(XMLFileParseResult xmlFileParseResult, Predicate<LineContent> isContentType) {
-      return filterContent4Type(xmlFileParseResult.getContent(), isContentType);
+      return lineContents.stream()
+            .filter(isServiceContent.negate())
+            .sorted(Comparator.comparing(LineContent::getContentType))
+            .collect(Collectors.toList());
    }
 
    private static List<LineContent> filterContent4Type(List<LineContent> lineContents, Predicate<LineContent> isContentType) {
-      return lineContents.stream()
+      return lineContents.parallelStream()
             .filter(isContentType)
-            .sorted(Comparator.comparing(LineContent::getContentType))
             .collect(Collectors.toList());
    }
 }

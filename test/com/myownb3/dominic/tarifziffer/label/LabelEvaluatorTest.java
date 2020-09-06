@@ -11,12 +11,10 @@ class LabelEvaluatorTest {
    void testGetLabel_NoLabel() {
 
       // Given
-      LabelEvaluator labelEvaluator = new LabelEvaluator();
+      LabelEvaluator labelEvaluator = LabelEvaluator.INSTANCE;
 
       // When
-      Executable ex = () -> {
-         labelEvaluator.getLabel("test");
-      };
+      Executable ex = () -> labelEvaluator.getLabel("test");
       // Then
       assertThrows(IllegalStateException.class, ex);
    }

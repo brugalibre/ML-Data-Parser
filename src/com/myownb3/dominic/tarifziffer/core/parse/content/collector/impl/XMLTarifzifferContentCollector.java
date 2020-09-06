@@ -28,7 +28,7 @@ public class XMLTarifzifferContentCollector implements XMLContentCollector {
    public LineContent collectContent(String parentQName, Attributes attributes) {
       List<InvoiceAttr> invoiceAttrs = new ArrayList<>();
       for (int i = 0; i < attributes.getLength(); i++) {
-         InvoiceAttr invoiceAttr = InvoiceAttrs.buildInvoiceAttr(attributes.getQName(i), attributes.getValue(i));
+         InvoiceAttr invoiceAttr = InvoiceAttrs.INSTANCE.buildInvoiceAttr(attributes.getQName(i), attributes.getValue(i));
          invoiceAttrs.add(invoiceAttr);
       }
       return new LineContentImpl(invoiceAttrs);

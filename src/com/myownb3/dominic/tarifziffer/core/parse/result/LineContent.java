@@ -1,6 +1,7 @@
 package com.myownb3.dominic.tarifziffer.core.parse.result;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.myownb3.dominic.invoice.attrs.metadata.InvoiceAttr;
 import com.myownb3.dominic.invoice.attrs.metadata.type.ContentType;
@@ -37,4 +38,11 @@ public interface LineContent {
     * @return all the {@link InvoiceAttr} of this {@link LineContent}
     */
    List<InvoiceAttr> getInvoiceAttrs();
+
+   /**
+    * Returns the file name of the xml file this {@link LineContent} belongs
+    * 
+    * @return the file name of the xml file this {@link LineContent} belongs
+    */
+   Optional<String> getOptionalXMLFileName();
 }

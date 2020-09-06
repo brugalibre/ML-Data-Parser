@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import com.myownb3.dominic.invoice.attrs.metadata.InvoiceAttr;
@@ -24,6 +25,7 @@ import com.myownb3.dominic.tarifziffer.core.parse.result.XMLContent;
 import com.myownb3.dominic.tarifziffer.core.parse.result.impl.LineContentImpl;
 import com.myownb3.dominic.tarifziffer.core.parse.result.impl.XMLContentImpl;
 import com.myownb3.dominic.tarifziffer.core.parse.result.impl.XMLFileParseResult;
+import com.myownb3.dominic.tarifziffer.logging.LoggerHelper;
 
 public class InvoiceDataCleanerImpl implements InvoiceDataCleaner {
 
@@ -36,9 +38,14 @@ public class InvoiceDataCleanerImpl implements InvoiceDataCleaner {
 
    @Override
    public List<XMLFileParseResult> purgeResults(List<XMLFileParseResult> result) {
-      LOG.info("Start purging the results..");
-      return new ArrayList<>(result)
-            .parallelStream()
+      LoggerHelper.INSTANCE.startLogInfo(LOG, "Start purging '" + result.size() + "' results");
+      List<XMLFileParseResult> purgedResult = mergeUpdatePurgeAndSortResults(result);
+      LoggerHelper.INSTANCE.endLogInfo(LOG, "Done purging, " + getCleaningResLogMsg(result, purgedResult) + " %s\n");
+      return purgedResult;
+   }
+
+   private List<XMLFileParseResult> mergeUpdatePurgeAndSortResults(List<XMLFileParseResult> result) {
+      return result.parallelStream()
             .filter(XMLFileParseResult::hasContent)
             .map(mergeHeaderContentLinesFromSameType())
             .map(addMissingValues())
@@ -52,29 +59,28 @@ public class InvoiceDataCleanerImpl implements InvoiceDataCleaner {
     */
    private Function<XMLFileParseResult, XMLFileParseResult> mergeHeaderContentLinesFromSameType() {
       return xmlFileParseResult -> {
-         XMLContent xmlContent = new XMLContentImpl();
-         Map<ContentType, List<LineContent>> headerContentType2ContentMap = fillUpHeaderContentType2ContentLinesMap(xmlFileParseResult);
-         mergeAndAddHeaderContent(headerContentType2ContentMap, xmlContent);
-         addServicesData(xmlFileParseResult, xmlContent);
-         return XMLFileParseResult.of(xmlFileParseResult.getXMLFileName(), xmlContent);
+         Map<ContentType, List<LineContent>> headerContentType2ContentMap = mapHeaderContentType2ContentLines(xmlFileParseResult);
+         List<LineContent> mergedHeaderWithServicesData = mergeAndAddHeaderContent(headerContentType2ContentMap);
+         mergedHeaderWithServicesData.addAll(addServicesData(xmlFileParseResult));
+         return XMLFileParseResult.of(xmlFileParseResult.getXMLFileName(), new XMLContentImpl(mergedHeaderWithServicesData));
       };
    }
 
-   private static void mergeAndAddHeaderContent(Map<ContentType, List<LineContent>> contentType2ContentMap, XMLContent xmlContent) {
-      contentType2ContentMap.entrySet()
-            .stream()
+   private static List<LineContent> mergeAndAddHeaderContent(Map<ContentType, List<LineContent>> contentType2ContentMap) {
+      return contentType2ContentMap.entrySet()
+            .parallelStream()
             .map(collectInvoiceAttrs4SameType())
             .map(LineContentImpl::new)
-            .forEach(xmlContent::add);
+            .collect(Collectors.toList());
    }
 
-   private static void addServicesData(XMLFileParseResult xmlFileParseResult, XMLContent xmlContent) {
-      ContentUtil.getServicesLineContent(xmlFileParseResult)
-            .stream()
-            .forEach(xmlContent::add);
+   private static List<LineContent> addServicesData(XMLFileParseResult xmlFileParseResult) {
+      return ContentUtil.getServicesLineContent(xmlFileParseResult)
+            .parallelStream()
+            .collect(Collectors.toList());
    }
 
-   private static Map<ContentType, List<LineContent>> fillUpHeaderContentType2ContentLinesMap(XMLFileParseResult xmlFileParseResult) {
+   private static Map<ContentType, List<LineContent>> mapHeaderContentType2ContentLines(XMLFileParseResult xmlFileParseResult) {
       Map<ContentType, List<LineContent>> contentType2ContentMap = new EnumMap<>(ContentType.class);
       for (LineContent lineContent : ContentUtil.getInvoiceHeaderContent(xmlFileParseResult)) {
          ContentType contentType = lineContent.getContentType();
@@ -102,7 +108,7 @@ public class InvoiceDataCleanerImpl implements InvoiceDataCleaner {
 
    private XMLContent buildNewXMLWithMissingContent(XMLFileParseResult xmlFileParseResult) {
       return new XMLContentImpl(xmlFileParseResult.getContent()
-            .stream()
+            .parallelStream()
             .map(addMissingValue4Line())
             .map(fixInvalidValues(xmlFileParseResult))
             .collect(Collectors.toList()));
@@ -117,23 +123,14 @@ public class InvoiceDataCleanerImpl implements InvoiceDataCleaner {
       List<InvoiceAttr> fixedParsedInvoiceAttrs = new ArrayList<>(lineContent.getInvoiceAttrs().size());
       for (InvoiceAttr invoiceAttr : currentParsedInvoiceAttrs) {
          if (!invoiceAttr.isValueValid(invoiceAttr.getValue())) {
-            List<InvoiceAttr> noneServiceData = getHeaderInvoiceAttrs(xmlFileParseResult);
-            String newValue = invoiceAttr.getValidValue(invoiceAttr.getValue(), noneServiceData);
+            String newValue = invoiceAttr.getValidValue(invoiceAttr.getValue());
             fixedParsedInvoiceAttrs.add(MutableInvoiceAttrFactory.INSTANCE.createNewMutableInvoiceAttr(invoiceAttr, newValue));
             logAttributeWithWrongValue(invoiceAttr.getName(), invoiceAttr.getValue(), newValue);
          } else {
             fixedParsedInvoiceAttrs.add(invoiceAttr);
          }
       }
-      return new LineContentImpl(fixedParsedInvoiceAttrs);
-   }
-
-   private static List<InvoiceAttr> getHeaderInvoiceAttrs(XMLFileParseResult xmlFileParseResult) {
-      return ContentUtil.getInvoiceHeaderContent(xmlFileParseResult)
-            .stream()
-            .map(LineContent::getInvoiceAttrs)
-            .flatMap(List::stream)
-            .collect(Collectors.toList());
+      return new LineContentImpl(fixedParsedInvoiceAttrs, xmlFileParseResult.getXMLFileName());
    }
 
    /*
@@ -142,11 +139,11 @@ public class InvoiceDataCleanerImpl implements InvoiceDataCleaner {
     */
    private Function<LineContent, LineContent> addMissingValue4Line() {
       return lineContent -> {
-         List<String> allAttrNames = InvoiceAttrs.getAllInvoiceAttrsNames(lineContent.getContentType(), isRawExport);
+         List<String> allAttrNames = InvoiceAttrs.INSTANCE.getAllInvoiceAttrsNames(lineContent.getContentType(), isRawExport);
          List<InvoiceAttr> parsedInvoiceAttrs = new ArrayList<>(lineContent.getInvoiceAttrs());
          for (String attrName : allAttrNames) {
             if (!hasLineValue4Key(lineContent, attrName)) {
-               InvoiceAttr invoiceAttr = InvoiceAttrs.getInvoiceAttrByName(attrName);
+               InvoiceAttr invoiceAttr = InvoiceAttrs.INSTANCE.getInvoiceAttrByName(attrName);
                String defaultValue = getDefaultValue(invoiceAttr, lineContent);
                parsedInvoiceAttrs.add(MutableInvoiceAttrFactory.INSTANCE.createNewMutableInvoiceAttr(invoiceAttr, defaultValue));
                logMissingAttribute(attrName);
@@ -173,14 +170,17 @@ public class InvoiceDataCleanerImpl implements InvoiceDataCleaner {
    }
 
    private static void logMissingAttribute(String attrName) {
-      if (LOG.isInfoEnabled()) {
-         LOG.info("Add missing value for attribute '" + attrName + "'");
-      }
+      LoggerHelper.INSTANCE.logIfEnabled(LOG, () -> "Add missing value for attribute '" + attrName + "'", Level.DEBUG);
    }
 
    private static void logAttributeWithWrongValue(String attrName, String value, String newValue) {
-      if (LOG.isInfoEnabled()) {
-         LOG.info("Wrong value '" + value + "' for Attribute '" + attrName + "' was set. Use new value '" + newValue + "' instead");
-      }
+      LoggerHelper.INSTANCE.logIfEnabled(LOG,
+            () -> "Wrong value '" + value + "' for Attribute '" + attrName + "' was set. Use new value '" + newValue + "' instead", Level.DEBUG);
+   }
+
+   private static String getCleaningResLogMsg(List<XMLFileParseResult> result, List<XMLFileParseResult> purgedResult) {
+      int sizeBefore = result.size();
+      int sizeAfter = purgedResult.size();
+      return "removed total '" + (sizeBefore - sizeAfter) + "' results without content";
    }
 }

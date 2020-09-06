@@ -3,6 +3,7 @@ package com.myownb3.dominic.tarifziffer.core.parse.result.impl;
 import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.myownb3.dominic.tarifziffer.core.parse.result.LineContent;
@@ -43,6 +44,6 @@ public class XMLContentImpl implements XMLContent {
 
    @Override
    public List<LineContent> getContent() {
-      return lineContent;
+      return Collections.unmodifiableList(lineContent);
    }
 }

@@ -1,23 +1,24 @@
 package com.myownb3.dominic.tarifziffer.core.merging.impl;
 
 
-import static com.myownb3.dominic.invoice.attrs.metadata.constants.InvoiceAttrs.evalAllInvoiceAttrsIncludingCategoricalValues;
-
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import com.myownb3.dominic.invoice.attrs.metadata.InvoiceAttr;
 import com.myownb3.dominic.invoice.attrs.metadata.NominalInvoiceAttr;
+import com.myownb3.dominic.invoice.attrs.metadata.constants.InvoiceAttrs;
 import com.myownb3.dominic.invoice.attrs.metadata.type.ContentType;
 import com.myownb3.dominic.invoice.attrs.model.DoubleMutableInvoiceAttr;
 import com.myownb3.dominic.invoice.attrs.model.impl.DoubleMutableInvoiceAttrImpl;
@@ -28,41 +29,52 @@ import com.myownb3.dominic.tarifziffer.core.parse.result.XMLContent;
 import com.myownb3.dominic.tarifziffer.core.parse.result.impl.LineContentImpl;
 import com.myownb3.dominic.tarifziffer.core.parse.result.impl.XMLContentImpl;
 import com.myownb3.dominic.tarifziffer.core.parse.result.impl.XMLFileParseResult;
+import com.myownb3.dominic.tarifziffer.logging.LoggerHelper;
+import com.myownb3.dominic.tarifziffer.mlclassifier.MLClassifiers;
 
 public class DefaultResultMergerImpl implements ResultMerger {
 
    private static final Logger LOG = Logger.getLogger(DefaultResultMergerImpl.class);
    private boolean isRawExport;
+   private MLClassifiers classifier;
 
-   public DefaultResultMergerImpl(boolean isRawExport) {
+   public DefaultResultMergerImpl(boolean isRawExport, MLClassifiers classifier) {
       this.isRawExport = isRawExport;
+      this.classifier = classifier;
    }
 
    @Override
    public List<XMLFileParseResult> mergeLineContent(List<XMLFileParseResult> result) {
+      LoggerHelper.INSTANCE.startLogInfo(LOG, "Start merging '" + result.size() + "' results");
+      List<XMLFileParseResult> mergeLineContent = mergeLineContent0(result);
+      LoggerHelper.INSTANCE.endLogInfo(LOG, "Done merging %s\n");
+      return mergeLineContent;
+   }
+
+   private List<XMLFileParseResult> mergeLineContent0(List<XMLFileParseResult> result) {
       if (result.isEmpty()) {
          return result;
       }
       // For performance reasons: lets do the merging one time, since all files should have the same attributes, the length of this merged attribues should be the same for all files
       List<DoubleMutableInvoiceAttr> mergedInvoiceAttrs = mergeParsedXMLFile2SingleLine(result.get(0));
-      return result.stream()
+      return result.parallelStream()
             .map(mergeXMLFileParseResult(mergedInvoiceAttrs))
             .collect(Collectors.toList());
    }
 
    private Function<XMLFileParseResult, XMLFileParseResult> mergeXMLFileParseResult(List<DoubleMutableInvoiceAttr> mergedInvoiceAttrsIn) {
       return xmlFileParseResult -> {
-         List<DoubleMutableInvoiceAttr> mergedInvoiceAttrs = createCopy(mergedInvoiceAttrsIn);
-         mergedInvoiceAttrs = fillMergedInvoiceAttrs(mergedInvoiceAttrs, xmlFileParseResult);
+         Map<String, DoubleMutableInvoiceAttr> mergedInvoiceAttrsMap = createCopy(mergedInvoiceAttrsIn);
+         List<DoubleMutableInvoiceAttr> mergedInvoiceAttrs = fillMergedInvoiceAttrs(mergedInvoiceAttrsMap, xmlFileParseResult);
+         logFileMerged(xmlFileParseResult);
          return XMLFileParseResult.of(xmlFileParseResult.getXMLFileName(), buildXMLContent(mergedInvoiceAttrs));
       };
    }
 
-   private List<DoubleMutableInvoiceAttr> createCopy(List<DoubleMutableInvoiceAttr> mergedInvoiceAttrsIn) {
-      return mergedInvoiceAttrsIn.stream()
-            .map(DoubleMutableInvoiceAttr::getInvoiceAttr)
-            .map(DoubleMutableInvoiceAttrImpl::of)
-            .collect(Collectors.toList());
+   private static Map<String, DoubleMutableInvoiceAttr> createCopy(List<DoubleMutableInvoiceAttr> mergedInvoiceAttrsIn) {
+      return mergedInvoiceAttrsIn.parallelStream()
+            .map(DoubleMutableInvoiceAttrImpl::copy)
+            .collect(Collectors.toMap(InvoiceAttr::getName, Function.identity()));
    }
 
    private static XMLContent buildXMLContent(List<DoubleMutableInvoiceAttr> mergedInvoiceAttrs) {
@@ -74,7 +86,7 @@ public class DefaultResultMergerImpl implements ResultMerger {
 
    private static List<DoubleMutableInvoiceAttr> filter(List<DoubleMutableInvoiceAttr> mergedInvoiceAttrs,
          Predicate<InvoiceAttr> isServiceDataPredicate) {
-      return mergedInvoiceAttrs.stream()
+      return mergedInvoiceAttrs.parallelStream()
             .filter(isServiceDataPredicate)
             .collect(Collectors.toList());
    }
@@ -83,71 +95,73 @@ public class DefaultResultMergerImpl implements ResultMerger {
     * The merged InvoiceAttrs has to be filled, according to the occurrences of each InvoiceAttr within the XMLFileParseResult
     * This result then represents the XMLFileParseResult as one single line 
     */
-   private List<DoubleMutableInvoiceAttr> fillMergedInvoiceAttrs(List<DoubleMutableInvoiceAttr> mergedInvoiceAttrs,
+   private List<DoubleMutableInvoiceAttr> fillMergedInvoiceAttrs(Map<String, DoubleMutableInvoiceAttr> mergedInvoiceAttrsMap,
          XMLFileParseResult xmlFileParseResult) {
-      evalAllInvoiceAttrs(xmlFileParseResult).stream()
-            .forEach(invoiceAttr -> setInvoiceAttrValue(mergedInvoiceAttrs, invoiceAttr));
-      scaleNonNominalValues(xmlFileParseResult, mergedInvoiceAttrs);
-      return mergedInvoiceAttrs;
+      setInvoiceAttrValues(mergedInvoiceAttrsMap, xmlFileParseResult);
+      scaleNonNominalValues(xmlFileParseResult, mergedInvoiceAttrsMap.values());
+      return mergedInvoiceAttrsMap.values()
+            .parallelStream()
+            .collect(Collectors.toList());
    }
 
-   private static void setInvoiceAttrValue(List<DoubleMutableInvoiceAttr> mergedInvoiceAttrs, InvoiceAttr invoiceAttr) {
+   private void setInvoiceAttrValues(Map<String, DoubleMutableInvoiceAttr> mergedInvoiceAttrsMap, XMLFileParseResult xmlFileParseResult) {
+      ContentUtil.getAllInvoiceAttrs4File(xmlFileParseResult)
+            .stream()
+            .forEach(invoiceAttr -> setInvoiceAttrValue(mergedInvoiceAttrsMap, invoiceAttr));
+   }
+
+   private void setInvoiceAttrValue(Map<String, DoubleMutableInvoiceAttr> mergedInvoiceAttrs, InvoiceAttr invoiceAttr) {
       String attrName4Lookup = evalLookupName(invoiceAttr);
       Optional<DoubleMutableInvoiceAttr> mergedInvoiceAttrOpt = evalInvoiceAttr(attrName4Lookup, mergedInvoiceAttrs);
       incrementValueIfPresent(mergedInvoiceAttrOpt, invoiceAttr);
    }
 
-   private void scaleNonNominalValues(XMLFileParseResult xmlFileParseResult, List<DoubleMutableInvoiceAttr> filledMergedInvoiceAttrs) {
+   private static void scaleNonNominalValues(XMLFileParseResult xmlFileParseResult, Collection<DoubleMutableInvoiceAttr> filledMergedInvoiceAttrs) {
       Predicate<DoubleMutableInvoiceAttr> isNominal = InvoiceAttr::isNominal;
-      filledMergedInvoiceAttrs.stream()
+      filledMergedInvoiceAttrs.parallelStream()
             .filter(isNominal.negate())
             .filter(isServicesData())
             .forEach(divideValueBySize(xmlFileParseResult.getContentSize()));
    }
 
    private static Consumer<DoubleMutableInvoiceAttr> divideValueBySize(int contentSize) {
-      return invoiceAttr -> invoiceAttr.setValue(invoiceAttr.getTypedValue() / contentSize);
+      return invoiceAttr -> divideValueBySize02(contentSize, invoiceAttr);
+   }
+
+   private static void divideValueBySize02(int contentSize, DoubleMutableInvoiceAttr invoiceAttr) {
+      invoiceAttr.setValue(invoiceAttr.getTypedValue() / contentSize);
    }
 
    private static String evalLookupName(InvoiceAttr invoiceAttr) {
-      return invoiceAttr.isNominal() ? ((NominalInvoiceAttr) invoiceAttr).buildAttrName(invoiceAttr.getValue())
-            : invoiceAttr.getName();
+      return invoiceAttr.isNominal() ? ((NominalInvoiceAttr) invoiceAttr).buildCategoricalAttrName(invoiceAttr.getValue()) : invoiceAttr.getName();
    }
 
-   private static List<InvoiceAttr> evalAllInvoiceAttrs(XMLFileParseResult xmlFileParseResult) {
-      return xmlFileParseResult.getContent()
-            .stream()
-            .map(LineContent::getInvoiceAttrs)
-            .flatMap(List::stream)
-            .collect(Collectors.toList());
-   }
-
-   private static void incrementValueIfPresent(Optional<DoubleMutableInvoiceAttr> mergedInvoiceAttrOpt, InvoiceAttr invoiceAttr) {
+   private void incrementValueIfPresent(Optional<DoubleMutableInvoiceAttr> mergedInvoiceAttrOpt, InvoiceAttr invoiceAttr) {
       mergedInvoiceAttrOpt.ifPresent(mergedInvoiceAttr -> incrementValue(mergedInvoiceAttr, invoiceAttr));
    }
 
-   private static void incrementValue(DoubleMutableInvoiceAttr mergedInvoiceAttr, InvoiceAttr invoiceAttr) {
+   private void incrementValue(DoubleMutableInvoiceAttr mergedInvoiceAttr, InvoiceAttr invoiceAttr) {
       // All occurrences of nominal values are incremented
-      double currentValue = mergedInvoiceAttr.getTypedValue();
       if (invoiceAttr.isNominal()) {
+         double currentValue = mergedInvoiceAttr.getTypedValue();
          mergedInvoiceAttr.setValue(++currentValue);
       } else if (invoiceAttr.isDouble()) {
          // All others are added (and divided by the amount of total attrs in the end). The other value has to be double, otherwise we are in trouble!
          double otherValue = Double.parseDouble(invoiceAttr.getValue());
-         mergedInvoiceAttr.setValue(currentValue + otherValue);
+         mergedInvoiceAttr.setValue(mergedInvoiceAttr.getTypedValue() + otherValue);
       } else if (invoiceAttr.isInteger()) {
          // All others are added (and divided by the amount of total attrs in the end). The other value has to be double, otherwise we are in trouble!
          double otherValue = Integer.parseInt(invoiceAttr.getValue());
-         mergedInvoiceAttr.setValue(currentValue + otherValue);
+         mergedInvoiceAttr.setValue(mergedInvoiceAttr.getTypedValue() + otherValue);
       } else {
-         LOG.warn("Attribute '" + invoiceAttr.getName() + "' is not merged because it's neither nominal nor floating point!");
+         LoggerHelper.INSTANCE.logIfEnabled(LOG,
+               () -> "Attribute '" + invoiceAttr.getName() + "' is not merged because it's neither nominal nor floating point!", Level.WARN);
       }
    }
 
-   private static Optional<DoubleMutableInvoiceAttr> evalInvoiceAttr(String name, List<DoubleMutableInvoiceAttr> mergedInvoiceAttrs) {
-      return mergedInvoiceAttrs.stream()
-            .filter(invoiceAttr -> invoiceAttr.getName().equals(name))
-            .findFirst();
+   private static Optional<DoubleMutableInvoiceAttr> evalInvoiceAttr(String name, Map<String, DoubleMutableInvoiceAttr> mergedInvoiceAttrs) {
+      DoubleMutableInvoiceAttr doubleMutableInvoiceAttr = mergedInvoiceAttrs.get(name);
+      return Optional.ofNullable(doubleMutableInvoiceAttr);
    }
 
    /*
@@ -160,29 +174,46 @@ public class DefaultResultMergerImpl implements ResultMerger {
       List<LineContent> invoiceHeaderContent = ContentUtil.getInvoiceHeaderContent(xmlFileParseResult);
       LineContent servicesLineContent = ContentUtil.getServicesLineContent(xmlFileParseResult).get(0);// We take the first, since all lines must contains all attributes!
       List<InvoiceAttr> invoiceHeaderWithoutNominalAttrs = mapContentLines2Attrs(invoiceHeaderContent, servicesLineContent);
-      List<InvoiceAttr> evalInvoiceAttrs4CategoricalValues = evalAllInvoiceAttrsIncludingCategoricalValues(invoiceHeaderWithoutNominalAttrs);
-      return evalInvoiceAttrs4CategoricalValues.stream()
-            .map(DoubleMutableInvoiceAttrImpl::of)
+      return InvoiceAttrs.INSTANCE.evalAllInvoiceAttrsIncludingCategoricalValues(invoiceHeaderWithoutNominalAttrs, false)
+            .parallelStream()
+            .map(createNewDoubleMutableInvoiceAttrImpl())
             .collect(Collectors.toList());
    }
 
+   private Function<InvoiceAttr, DoubleMutableInvoiceAttr> createNewDoubleMutableInvoiceAttrImpl() {
+      ToDoubleFunction<InvoiceAttr> defaultValueFunction = getDefaultValueFunction();
+      return invoiceAttr -> DoubleMutableInvoiceAttrImpl.of(invoiceAttr, defaultValueFunction.applyAsDouble(invoiceAttr));
+   }
+
+   private ToDoubleFunction<InvoiceAttr> getDefaultValueFunction() {
+      return invoiceAttr -> {
+         if (invoiceAttr.isNominal()) {
+            // In order to avoid the zero-frequency-problem
+            return classifier == MLClassifiers.NAIVE_BAYES ? 1.0 : 0.0;
+         }
+         return 0.0;
+      };
+   }
+
    private List<InvoiceAttr> mapContentLines2Attrs(List<LineContent> invoiceHeaderContent, LineContent servicesLineContent) {
-      List<InvoiceAttr> mergedInvoicesHeaderAttrs = new ArrayList<>();
       invoiceHeaderContent.add(servicesLineContent);
-      invoiceHeaderContent.stream()
+      return invoiceHeaderContent.parallelStream()
             .map(LineContent::getInvoiceAttrs)
             .flatMap(List::stream)
             .filter(filterInvoiceAttr())
-            .forEach(mergedInvoicesHeaderAttrs::add);
-      Collections.sort(mergedInvoicesHeaderAttrs, Comparator.comparing(InvoiceAttr::getSequence));
-      return mergedInvoicesHeaderAttrs;
+            .collect(Collectors.toList());
    }
 
    private Predicate<InvoiceAttr> filterInvoiceAttr() {
       return invoiceAttr -> !isRawExport || invoiceAttr.isRelevant4Vectorizing();
    }
 
-   private Predicate<InvoiceAttr> isServicesData() {
+   private static Predicate<InvoiceAttr> isServicesData() {
       return invoiceAttr -> invoiceAttr.getContentType() == ContentType.SERVICES_DATA;
+   }
+
+   private static void logFileMerged(XMLFileParseResult xmlFileParseResult) {
+      LoggerHelper.INSTANCE.logIfEnabled(LOG,
+            () -> "Done merging file '" + xmlFileParseResult.getXMLFileName() + "'", Level.DEBUG);
    }
 }

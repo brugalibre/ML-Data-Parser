@@ -1,14 +1,17 @@
 package com.myownb3.dominic.tarifziffer.core.export.impl;
 
+import static com.myownb3.dominic.invoice.util.StringUtil.flattenList;
 import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.apache.log4j.Logger;
+import org.apache.log4j.Level;
 
 import com.myownb3.dominic.invoice.attrs.metadata.constants.InvoiceAttrs;
 import com.myownb3.dominic.invoice.attrs.metadata.type.ContentType;
@@ -21,40 +24,44 @@ import com.myownb3.dominic.tarifziffer.core.export.mode.ExportMode;
 import com.myownb3.dominic.tarifziffer.core.parse.result.LineContent;
 import com.myownb3.dominic.tarifziffer.core.parse.result.impl.XMLFileParseResult;
 import com.myownb3.dominic.tarifziffer.label.LabelEvaluator;
+import com.myownb3.dominic.tarifziffer.logging.LoggerHelper;
 
 public class InvoiceExportContentCollectorImpl extends AbstractInvoiceExportContentCollector {
 
-   private static final Logger LOG = Logger.getLogger(InvoiceExportContentCollectorImpl.class);
    protected Supplier<List<String>> headerSupplier;
-   private ExportMode exportMode;
-   private String fileName;
-   private LabelEvaluator labelEvaluator;
+   protected ExportMode exportMode;
 
-   public InvoiceExportContentCollectorImpl(List<XMLFileParseResult> result, String fileName, ExportMode exportMode) {
+   public InvoiceExportContentCollectorImpl(List<XMLFileParseResult> result, ExportMode exportMode, boolean omitHeader) {
       super();
-      this.result = result;
-      this.fileName = fileName;
-      this.headerSupplier = getHeaderSupplier(exportMode);
-      this.exportMode = exportMode;
-      if (exportMode.isWekaExport()) {
-         this.labelEvaluator = buildAndInitLabelEvaluator();
-      }
+      this.result = requireNonNull(result, "The result must not be null!");
+      this.headerSupplier = omitHeader ? Collections::emptyList : getHeaderSupplier(exportMode);
+      this.exportMode = requireNonNull(exportMode);
    }
 
    @Override
    public List<String> collectContent() {
-      LOG.info("Start collecting results. Total results: '" + result.size() + "'");
+      beforeCollecting();
+      if (result.isEmpty()) {
+         return Collections.emptyList();
+      }
       List<String> keys = evalServiceDataKeys(result);
       List<String> fileContent = result.parallelStream()
             .map(buildStringRepresentation(keys))
             .collect(Collectors.collectingAndThen(Collectors.toList(), StringUtil.appendLineBreaks()));
       addHeader(fileContent);
-      LOG.info("Done collecting results");
+      afterCollecting();
       return fileContent;
    }
 
+   /**
+    * Returns a list containing all necessary names of services {@link InvoiceAttrs} names as key
+    * 
+    * @param result
+    *        the result of parsed xml files - is used by overriding subclasses
+    * @return a list containing all necessary names of services {@link InvoiceAttrs} names as key
+    */
    protected List<String> evalServiceDataKeys(List<XMLFileParseResult> result) {
-      return InvoiceAttrs.getAllInvoiceAttrsNames(ContentType.SERVICES_DATA, exportMode.isRawExport());
+      return InvoiceAttrs.INSTANCE.getAllInvoiceAttrsNames(ContentType.SERVICES_DATA, exportMode.isRawExport());
    }
 
    private void addHeader(List<String> fileContent) {
@@ -69,9 +76,9 @@ public class InvoiceExportContentCollectorImpl extends AbstractInvoiceExportCont
       logBeginCollect(xmlFileParseResult);
       String headerContentLine = collectAndBuildHeaderContentLine(xmlFileParseResult);
       return ContentUtil.getServicesLineContent(xmlFileParseResult)
-            .parallelStream()
+            .stream()
             .map(appendContentLine2String(keys, xmlFileParseResult, headerContentLine))
-            .collect(Collectors.collectingAndThen(Collectors.toList(), StringUtil.flattenList()));
+            .collect(Collectors.collectingAndThen(Collectors.toList(), StringUtil.flattenListnl()));
    }
 
    private Function<LineContent, String> appendContentLine2String(List<String> keys, XMLFileParseResult xmlFileParseResult,
@@ -87,7 +94,7 @@ public class InvoiceExportContentCollectorImpl extends AbstractInvoiceExportCont
    }
 
    private String getLabel(XMLFileParseResult xmlFileParseResult) {
-      return nonNull(labelEvaluator) ? labelEvaluator.getLabel(xmlFileParseResult.getXMLFileName()) : "";
+      return exportMode.isWekaExport() ? LabelEvaluator.INSTANCE.getLabel(xmlFileParseResult.getXMLFileName()) : "";
    }
 
    private String collectAndBuildHeaderContentLine(XMLFileParseResult xmlFileParseResult) {
@@ -105,32 +112,58 @@ public class InvoiceExportContentCollectorImpl extends AbstractInvoiceExportCont
    }
 
    protected List<String> evalNonServiceDataKeys(LineContent lineContent) {
-      return InvoiceAttrs.getAllInvoiceAttrsNames(lineContent.getContentType(), exportMode.isRawExport());
+      return InvoiceAttrs.INSTANCE.getAllInvoiceAttrsNames(lineContent.getContentType(), exportMode.isRawExport());
    }
 
-   private String buildExportLine(List<String> keys, LineContent lineContent, boolean hasNextLine) {
-      StringBuilder stringBuilder = new StringBuilder();
-      Iterator<String> keyIterator = keys.iterator();
-      while (keyIterator.hasNext()) {
-         stringBuilder.append(getLineValue4Key(lineContent, keyIterator.next()));
-         addLineDelimiterIfNecessary(keyIterator.hasNext(), stringBuilder);
-      }
-      addLineDelimiterIfNecessary(hasNextLine, stringBuilder);
-      return stringBuilder.toString();
+   /**
+    * Exports all values within the given {@link LineContent} as single String
+    * The given keys, respectively names of {@link InvoiceAttrs}, defines the values which are exported.
+    * If a value is missing of a given key, a {@link AttrHasNoValuesException} is thrown. This ensures, that all necessary values are
+    * present!
+    * 
+    * @param keys
+    *        the name of attributes whose values are exported
+    * @param lineContent
+    *        the {@link LineContent} with the values
+    * @param hasNextLine
+    *        <code>true</code> if there is a next line to append
+    * @return a single String with all values
+    */
+   protected String buildExportLine(List<String> keys, LineContent lineContent, boolean hasNextLine) {
+      return keys.stream()
+            .map(getLineValue4Key(lineContent))
+            .map(addLineDelimiter())
+            .collect(Collectors.collectingAndThen(Collectors.toList(),
+                  flattenList().andThen(removeLastLineDelimiter(hasNextLine))));
    }
 
-   private void addLineDelimiterIfNecessary(boolean hasNextLine, StringBuilder stringBuilder) {
-      if (hasNextLine) {
-         stringBuilder.append(exportMode.getLineDelimiter());
-      }
+   private Function<String, String> getLineValue4Key(LineContent lineContent) {
+      return key -> {
+         String value4Key = lineContent.getValue(key);
+         if (nonNull(value4Key)) {
+            return value4Key;
+         }
+         throw new AttrHasNoValuesException("Attribute '" + key + "' has no value set!");
+      };
    }
 
-   private static String getLineValue4Key(LineContent lineContent, String key) {
-      String value4Key = lineContent.getValue(key);
-      if (nonNull(value4Key)) {
-         return value4Key;
-      }
-      throw new AttrHasNoValuesException("Attribute '" + key + "' has no value set!");
+   protected Function<String, String> addLineDelimiter() {
+      return lineValue -> lineValue + exportMode.getLineDelimiter();
+   }
+
+   /*
+    * Remove the last delimiter, if there is no next line
+    * Since we added one to all values, we have to remove the last one because we don't need any at the last one
+    */
+   protected Function<String, String> removeLastLineDelimiter(boolean hasNextLine) {
+      return value -> {
+         if (!hasNextLine) {
+            return new StringBuilder(value)
+                  .delete(value.length() - 1, value.length())
+                  .toString();
+         }
+         return value;
+      };
    }
 
    private void appendFileName(StringBuilder stringBuilder, String xmlFileName) {
@@ -152,30 +185,21 @@ public class InvoiceExportContentCollectorImpl extends AbstractInvoiceExportCont
       return new WekaHeaderSupplier();
    }
 
+   /**
+    * Returns the default {@link Supplier} for a header
+    * 
+    * @param result
+    *        the result of all parsed xml files - is used in overriding classes
+    * @param exportMode
+    *        the {@link ExportMode}
+    * @return the default {@link Supplier} for a header
+    */
    protected Supplier<List<String>> getDefaultHeaderSupplier(List<XMLFileParseResult> result, ExportMode exportMode) {
       return new DefaultHeaderSupplier(exportMode);
    }
 
-   @Override
-   public String getExportFileName() {
-      return fileName;
-   }
-
-   @Override
-   public String getFileExtension() {
-      return exportMode.getFileExtension();
-   }
-
    private static void logBeginCollect(XMLFileParseResult xmlFileParseResult) {
-      LOG.info("Collecting content lines for file '" + xmlFileParseResult.getXMLFileName() + "' with total '" + xmlFileParseResult.getContentSize()
-            + "' lines");
-   }
-
-   private static LabelEvaluator buildAndInitLabelEvaluator() {
-      LOG.info("Start initializing the LabelEvaluator");
-      LabelEvaluator labelEvaluator = new LabelEvaluator();
-      labelEvaluator.init();
-      LOG.info("Done initializing the LabelEvaluator");
-      return labelEvaluator;
+      LoggerHelper.INSTANCE.logIfEnabled(LOG, () -> "Collecting content lines for file '" + xmlFileParseResult.getXMLFileName() + "' with total '"
+            + xmlFileParseResult.getContentSize() + "' lines", Level.DEBUG);
    }
 }

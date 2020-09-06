@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import com.myownb3.dominic.tarifziffer.core.merging.impl.DefaultResultMergerImpl;
 import com.myownb3.dominic.tarifziffer.core.parse.result.impl.XMLFileParseResult;
+import com.myownb3.dominic.tarifziffer.mlclassifier.MLClassifiers;
 
 class DefaultResultMergerImplTest {
 
@@ -17,7 +18,7 @@ class DefaultResultMergerImplTest {
    void testMergeLineContent() {
 
       // Given
-      DefaultResultMergerImpl defaultResultMergerImpl = new DefaultResultMergerImpl(false);
+      DefaultResultMergerImpl defaultResultMergerImpl = new DefaultResultMergerImpl(false, MLClassifiers.ANY_OTHER);
       List<XMLFileParseResult> result = Collections.emptyList();
 
       // When

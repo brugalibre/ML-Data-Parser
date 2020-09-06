@@ -5,7 +5,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -19,15 +22,16 @@ import com.myownb3.dominic.tarifziffer.io.input.FileImporter;
 
 class XMLInvoiceContentParserTest {
 
-   private static final String EXPECTED_RAW_MERGED_CONTENT =
-         "45.0;1.0;0.0;1.0;0.0;0.0;0.0;0.0;0.0;21.630000000000003;12.11;9.52;0.0;0.0;4.0;1.0;5.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;5.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0.0;0...";
+   private static final String _00_0020 = "00.0020";
+   private static final String TEST_RES_INVOICES_CASE1 = "test_res\\invoices_case1\\";
+   private static final String TEST_RES_MEDICAL_ROLE_TEST_CASE = "test_res\\medical_role\\";
 
    @Test
-   void testStartApp() {
+   void testStartApp() throws IOException {
       // Given
       String fileName = "I_dont_care";
       String[] args = new String[5];
-      args[0] = "test_res\\invoices_case1\\";
+      args[0] = TEST_RES_INVOICES_CASE1;
       args[1] = "-";// export directory
       args[2] = fileName;
       args[3] = null;
@@ -38,20 +42,37 @@ class XMLInvoiceContentParserTest {
 
       // Then delete file
       File exportedFile = getFile(fileName);
-      exportedFile.delete();
+      Files.delete(exportedFile.toPath());
+      assertThat(exportedFile.exists(), is(false));
+   }
+
+   @Test
+   void testStartAppWithNoValidPathExpectNoException() {
+      // Given
+      String fileName = "I_dont_care";
+      String[] args = new String[5];
+      args[0] = "test_res\\thisfolderdoesnotexist\\";
+      args[1] = "-";// export directory
+      args[2] = fileName;
+      args[3] = null;
+      args[4] = "EXPORT_ALL_TARIFZIFFER";
+
+      // When
+      XMLInvoiceContentApp.main(args);
+
+      // Then expect no exception
    }
 
    @Test
    void testNoTarifzifferGivenForSingleExport() {
       // Given
-      ExportMode exportMode = ExportMode.COUNT_SINGLE_TARIFZIFFER;
       String tarifziffer = null;
-      String path = "test_res\\invoices_case1\\";
 
       // When
       Executable ex = () -> {
-         ExportData exportData = new ExportData(new ExportRange(), path, null, "");
-         new XMLInvoiceContentParser(exportData, tarifziffer, exportMode);
+         ExportInfoContainer exportInfoContainer =
+               new ExportInfoContainer(new ExportRange(), ExportMode.COUNT_SINGLE_TARIFZIFFER, TEST_RES_INVOICES_CASE1, "", "");
+         new XMLInvoiceContentParser(exportInfoContainer, tarifziffer);
       };
 
       // Then
@@ -59,15 +80,30 @@ class XMLInvoiceContentParserTest {
    }
 
    @Test
-   void testExportTarifziffer_SetTreatmentStationaryOrStationary() {
+   void testNoOutputDirectory() {
+      // Given
+      ExportMode exportMode = ExportMode.COUNT_SINGLE_TARIFZIFFER;
+      String path = TEST_RES_INVOICES_CASE1;
+
+      // When
+      Executable ex = () -> {
+         new ExportInfoContainer(new ExportRange(), exportMode, path, null, "");
+      };
+
+      // Then
+      assertThrows(NullPointerException.class, ex);
+   }
+
+   @Test
+   void testExportTarifziffer_SetTreatmentStationaryOrStationary() throws IOException {
 
       // Given
       String fileName = "test_export_statOrAmb";
       List<String> expectedContent = getExpectedContent_Treatment();
       XMLInvoiceContentParser xmlParser = new ExportTestCaseBuilder()
             .withExportMode(ExportMode.EXPORT_SINGLE_TARIFZIFFER)
-            .withTarifziffer("00.0020")
-            .withPath("test_res\\invoices_case_treatment\\")
+            .withTarifziffer(_00_0020)
+            .withInputPath("test_res\\invoices_case_treatment\\")
             .withFileName(fileName)
             .build();
 
@@ -77,21 +113,21 @@ class XMLInvoiceContentParserTest {
       // Then
       File exportedFile = getFile(fileName);
       List<String> importedContent = FileImporter.INTANCE.importFile(exportedFile);
-      assertThat(importedContent.size(), is(3));
+      assertThat(importedContent.size(), is(4));
       assertContent(expectedContent, importedContent);
-      exportedFile.delete();
+      Files.delete(exportedFile.toPath());
    }
 
    @Test
-   void testExportTarifziffer_00_0020_WithHeader() {
+   void testExportTarifziffer_00_0020_WithHeader() throws IOException {
 
       // Given
-      String fileName = "test_export";
+      String fileName = "test_export1";
       List<String> expectedContent = getExpectedContent(true);
       XMLInvoiceContentParser xmlParser = new ExportTestCaseBuilder()
             .withExportMode(ExportMode.EXPORT_SINGLE_TARIFZIFFER)
-            .withTarifziffer("00.0020")
-            .withPath("test_res\\invoices_case1\\")
+            .withTarifziffer(_00_0020)
+            .withInputPath(TEST_RES_INVOICES_CASE1)
             .withFileName(fileName)
             .build();
 
@@ -103,19 +139,19 @@ class XMLInvoiceContentParserTest {
       List<String> importedContent = FileImporter.INTANCE.importFile(exportedFile);
       assertThat(importedContent.size(), is(6));
       assertContent(expectedContent, importedContent);
-      exportedFile.delete();
+      Files.delete(exportedFile.toPath());
    }
 
    @Test
-   void testExportTarifziffer_00_0020_WithoutHeader() {
+   void testExportTarifziffer_00_0020_WithoutHeader() throws IOException {
 
       // Given
-      String fileName = "test_export";
+      String fileName = "test_export2";
       List<String> expectedContent = getExpectedContent(false);
       XMLInvoiceContentParser xmlParser = new ExportTestCaseBuilder()
             .withExportMode(ExportMode.EXPORT_SINGLE_TARIFZIFFER_RAW)
-            .withTarifziffer("00.0020")
-            .withPath("test_res\\invoices_case1\\")
+            .withTarifziffer(_00_0020)
+            .withInputPath(TEST_RES_INVOICES_CASE1)
             .withFileName(fileName)
             .build();
 
@@ -127,19 +163,43 @@ class XMLInvoiceContentParserTest {
       List<String> importedContent = FileImporter.INTANCE.importFile(exportedFile);
       assertThat(importedContent.size(), is(5));
       assertContent(expectedContent, importedContent);
-      exportedFile.delete();
+      Files.delete(exportedFile.toPath());
    }
 
    @Test
-   void testExportTarifziffer_00_0020_WekaExport() {
+   void testExportTarifziffer_00_0020_DefaultValueMedicalRole_WithoutHeader() throws IOException {
+
+      // Given
+      String fileName = "test_export_medicalRoleTest";
+      List<String> expectedContent = getExpectedMedicalRoleTestContent();
+      XMLInvoiceContentParser xmlParser = new ExportTestCaseBuilder()
+            .withExportMode(ExportMode.EXPORT_SINGLE_TARIFZIFFER_RAW)
+            .withTarifziffer(_00_0020)
+            .withInputPath(TEST_RES_MEDICAL_ROLE_TEST_CASE)
+            .withFileName(fileName)
+            .build();
+
+      // When
+      xmlParser.selectAndExportContent();
+
+      // Then
+      File exportedFile = getFile(fileName);
+      List<String> importedContent = FileImporter.INTANCE.importFile(exportedFile);
+      assertThat(importedContent.size(), is(1));
+      assertContent(expectedContent, importedContent);
+      Files.delete(exportedFile.toPath());
+   }
+
+   @Test
+   void testExportTarifziffer_00_0020_WekaExport() throws IOException {
 
       // Given
       String fileName = "test_weka_export";
       List<String> expectedContent = getWekaExpectedContent();
       XMLInvoiceContentParser xmlParser = new ExportTestCaseBuilder()
             .withExportMode(ExportMode.EXPORT_SINGLE_TARIFZIFFER_WEKA)
-            .withTarifziffer("00.0020")
-            .withPath("test_res\\invoices_case1\\")
+            .withTarifziffer(_00_0020)
+            .withInputPath(TEST_RES_INVOICES_CASE1)
             .withFileName(fileName)
             .build();
 
@@ -151,19 +211,19 @@ class XMLInvoiceContentParserTest {
       List<String> importedContent = FileImporter.INTANCE.importFile(exportedFile);
       assertThat(importedContent.size(), is(41));
       assertContent(expectedContent, importedContent);
-      exportedFile.delete();
+      Files.delete(exportedFile.toPath());
    }
 
    @Test
-   void testExportTarifziffer_All_RawExport() {
+   void testExportTarifziffer_All_RawExport() throws IOException {
 
       // Given
-      String fileName = "test_export";
+      String fileName = "test_export3";
       List<String> expectedContent = getAllExpectedRawContent();
       XMLInvoiceContentParser xmlParser = new ExportTestCaseBuilder()
             .withExportMode(ExportMode.EXPORT_ALL_TARIFZIFFER_RAW)
             .withTarifziffer(null)
-            .withPath("test_res\\invoices_case1\\")
+            .withInputPath(TEST_RES_INVOICES_CASE1)
             .withFileName(fileName)
             .build();
 
@@ -175,18 +235,18 @@ class XMLInvoiceContentParserTest {
       List<String> importedContent = FileImporter.INTANCE.importFile(exportedFile);
       assertThat(importedContent.size(), is(206));
       assertContent(expectedContent, importedContent);
-      exportedFile.delete();
+      Files.delete(exportedFile.toPath());
    }
 
    @Test
-   void testExportTarifziffer_Single_MergedRawExport() {
+   void testExportTarifziffer_Single_MergedRawExport() throws IOException {
 
       // Given
-      String fileName = "test_export";
+      String fileName = "test_export4";
       XMLInvoiceContentParser xmlParser = new ExportTestCaseBuilder()
             .withExportMode(ExportMode.EXPORT_SINGLE_TARIFZIFFER_MERGED_RAW)
-            .withTarifziffer("00.0020")
-            .withPath("test_res\\invoices_case1\\")
+            .withTarifziffer(_00_0020)
+            .withInputPath(TEST_RES_INVOICES_CASE1)
             .withFileName(fileName)
             .build();
 
@@ -195,22 +255,23 @@ class XMLInvoiceContentParserTest {
 
       // Then
       File exportedFile = getFile(fileName, ".csv");
-      List<String> importedContent = FileImporter.INTANCE.importFile(new File("test_res\\testresults\\expectedMergedRowTestCase1.txt"));
+      List<String> importedContent = FileImporter.INTANCE.importFile(new File("test_res\\testresults\\expectedMergedRawTestCase.txt"));
+      List<String> expectedImportedContent =
+            FileImporter.INTANCE.importFile(new File("test_res\\testresults\\expectedMergedRawTestCase.txt"));
       assertThat(importedContent.size(), is(1));
-      //      assertThat(EXPECTED_RAW_MERGED_CONTENT, is(importedContent.get(0)));
-      // Same here, I've to find another way to verify that output, because its simply to large..
-      exportedFile.delete();
+      assertThat(expectedImportedContent.get(0), is(importedContent.get(0)));
+      Files.delete(exportedFile.toPath());
    }
 
    @Test
-   void testExportTarifziffer_Single_MergedWekaExport() {
+   void testExportTarifziffer_Single_MergedWekaExport() throws IOException {
 
       // Given
-      String fileName = "test_export";
+      String fileName = "expectedMergedWekaTestCase";
       XMLInvoiceContentParser xmlParser = new ExportTestCaseBuilder()
             .withExportMode(ExportMode.EXPORT_SINGLE_TARIFZIFFER_MERGED_WEKA)
-            .withTarifziffer("00.0020")
-            .withPath("test_res\\invoices_case1\\")
+            .withTarifziffer(_00_0020)
+            .withInputPath(TEST_RES_INVOICES_CASE1)
             .withFileName(fileName)
             .build();
 
@@ -218,38 +279,64 @@ class XMLInvoiceContentParserTest {
       xmlParser.selectAndExportContent();
 
       // Then
-      File exportedFile = getFile(fileName, ".csv");
-      List<String> importedContent = FileImporter.INTANCE.importFile(new File("test_res\\testresults\\expectedMergedRowTestCase1.txt"));
-      assertThat(importedContent.size(), is(1));
-      //      assertThat(EXPECTED_RAW_MERGED_CONTENT, is(importedContent.get(0)));
-      // Same here, I've to find another way to verify that output, because its simply to large..
-      exportedFile.delete();
+      File exportedFile = getFile(fileName, ".arff");
+      List<String> actualImportedContent =
+            FileImporter.INTANCE.importFile(new File(FileSystemUtil.getHomeDir() + "\\expectedMergedWekaTestCase.arff"));
+      List<String> expectedImportedContent =
+            FileImporter.INTANCE.importFile(new File("test_res\\testresults\\expectedMergedWekaTestCase.txt"));
+      assertThat(actualImportedContent.size(), is(16318));
+      assertContent(expectedImportedContent, actualImportedContent);
+      Files.delete(exportedFile.toPath());
    }
 
    @Test
-   void testCountOccurrencesTarifziffer_00_0020() {
+   void testWithInvalidRange() throws IOException {
+
+      // Given
+      XMLInvoiceContentParser xmlParser = new ExportTestCaseBuilder()
+            .withExportMode(ExportMode.EXPORT_ALL_TARIFZIFFER_RAW)
+            .withTarifziffer(_00_0020)
+            .withInputPath(TEST_RES_INVOICES_CASE1)
+            .withOutputPath(FileSystemUtil.getHomeDir())
+            .withFileName("test_no_export")
+            .withExportRange(new ExportRange(5, 10))
+            .build();
+
+      // When
+      xmlParser.selectAndExportContent();
+
+      // Then
+      File exportedFile = getFile("test_no_export");
+      List<String> importedContent = FileImporter.INTANCE.importFile(exportedFile);
+      assertThat(importedContent.size(), is(0));// zero because the range is out of range and therefore there is no export
+      Files.delete(exportedFile.toPath());
+   }
+
+   @Test
+   void testCountOccurrencesTarifziffer_00_0020() throws IOException {
 
       // Given
       int expectedOccurrences = 7;
+      String fileName = "Auswertung XMLs mit Tarifziffer";
       XMLInvoiceContentParser xmlParser = new ExportTestCaseBuilder()
             .withExportMode(ExportMode.COUNT_SINGLE_TARIFZIFFER)
-            .withTarifziffer("00.0020")
-            .withPath("test_res\\invoices_case1\\")
-            .withFileName("")
+            .withTarifziffer(_00_0020)
+            .withInputPath(TEST_RES_INVOICES_CASE1)
+            .withFileName(fileName)
             .build();
 
       // When
       xmlParser.selectAndExportContent();
 
       // Then
-      File exportedFile = getFile("Auswertung XMLs mit Tarifziffer");
+      File exportedFile = getFile(fileName);
       List<String> importedContent = FileImporter.INTANCE.importFile(exportedFile);
       assertThat(importedContent.size(), is(4));
       String line3 = importedContent.get(3);
       String[] split = line3.split(";");
       assertThat(split.length, is(2));
       assertThat(Integer.valueOf(split[1]), is(expectedOccurrences));
-      exportedFile.delete();
+      Files.delete(exportedFile.toPath());
    }
 
    private static File getFile(String fileName) {
@@ -257,7 +344,7 @@ class XMLInvoiceContentParserTest {
    }
 
    private static File getFile(String fileName, String suffix) {
-      String exportPath = FileSystemUtil.getHomeDir() + "\\" + fileName + suffix;
+      String exportPath = FileSystemUtil.getHomeDir() + FileSystemUtil.getDefaultFileSystemSeparator() + fileName + suffix;
       return new File(exportPath);
    }
 
@@ -274,11 +361,13 @@ class XMLInvoiceContentParserTest {
    private static class ExportTestCaseBuilder {
       private ExportMode exportMode;
       private String tarifziffer;
-      private String path;
+      private String inputPath;
       private String fileName;
+      private ExportRange exportRange;
+      private String outputPath;
 
       private ExportTestCaseBuilder() {
-         // private 
+         this.exportRange = new ExportRange();
       }
 
       private ExportTestCaseBuilder withFileName(String fileName) {
@@ -286,8 +375,18 @@ class XMLInvoiceContentParserTest {
          return this;
       }
 
-      private ExportTestCaseBuilder withPath(String path) {
-         this.path = path;
+      private ExportTestCaseBuilder withExportRange(ExportRange exportRange) {
+         this.exportRange = exportRange;
+         return this;
+      }
+
+      private ExportTestCaseBuilder withInputPath(String path) {
+         this.inputPath = path;
+         return this;
+      }
+
+      private ExportTestCaseBuilder withOutputPath(String path) {
+         this.outputPath = path;
          return this;
       }
 
@@ -302,347 +401,347 @@ class XMLInvoiceContentParserTest {
       }
 
       private XMLInvoiceContentParser build() {
-         ExportData exportData = new ExportData(new ExportRange(), path, fileName, null);
-         return new XMLInvoiceContentParser(exportData, tarifziffer, exportMode);
+         ExportInfoContainer exportInfoContainer = new ExportInfoContainer(exportRange, exportMode, inputPath, fileName, outputPath);
+         return new XMLInvoiceContentParser(exportInfoContainer, tarifziffer);
       }
    }
 
    private List<String> getAllExpectedRawContent() {
       List<String> expectedContent = new ArrayList<>();
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1021.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1021.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1021.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1021.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;249.87;0.0;0.0;none;none;41030;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;249.87;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;249.87;0.0;0.0;both;none;41030;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;249.87;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1600.0;0.0;0.0;none;none;39.1502.10.05;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M850;50;3;ambulatory;1.0;0.0;0.0;1600.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1600.0;0.0;0.0;both;none;39.1502.10.05;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M850;50;3;ambulatory;1.0;0.0;0.0;1600.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;30.73;0.0;0.0;none;none;7680537470274;0.0;1.0;0.0;0.0;self_employed;false;0.2;0.0;0.0;M990;5;402;ambulatory;1.0;0.0;0.0;153.65;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;30.73;0.0;0.0;both;none;7680537470274;0.0;1.0;0.0;0.0;self_employed;false;0.2;0.0;0.0;M990;5;402;ambulatory;1.0;0.0;0.0;153.65;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;58.8;0.0;0.0;none;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;58.8;0.0;0.0;both;none;3040;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;410;ambulatory;1.05;0.0;0.0;56.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1356.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1356.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1356.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1356.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.8;0.0;0.0;none;none;1738.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.8;0.0;0.0;both;none;1738.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.8;0.0;0.0;none;none;1738.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.8;0.0;0.0;both;none;1738.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1668.75;0.0;0.0;none;none;7680563260047;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;1668.75;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1668.75;0.0;0.0;both;none;7680563260047;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;1668.75;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1668.75;0.0;0.0;none;none;7680563260047;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;1668.75;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1668.75;0.0;0.0;both;none;7680563260047;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;1668.75;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;26.0;0.0;0.0;none;none;1266.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;26.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;26.0;0.0;0.0;both;none;1266.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;26.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;26.0;0.0;0.0;none;none;1266.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;26.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;26.0;0.0;0.0;both;none;1266.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;26.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;26.0;0.0;0.0;none;none;1266.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;26.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;26.0;0.0;0.0;both;none;1266.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;26.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;132.3;0.0;0.0;none;none;7680654990013;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;132.3;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;132.3;0.0;0.0;both;none;7680654990013;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;132.3;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;132.3;0.0;0.0;none;none;7680654990013;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;132.3;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;132.3;0.0;0.0;both;none;7680654990013;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;132.3;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.0;0.0;0.0;none;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.0;0.0;0.0;both;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.0;0.0;0.0;none;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.0;0.0;0.0;both;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.0;0.0;0.0;none;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;3;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.0;0.0;0.0;both;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;3;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.0;0.0;0.0;none;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;3;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.0;0.0;0.0;both;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;3;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.0;0.0;0.0;none;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.0;0.0;0.0;both;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.0;0.0;0.0;none;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.0;0.0;0.0;both;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.0;0.0;0.0;none;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;4;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.0;0.0;0.0;both;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;4;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.0;0.0;0.0;none;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;4;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.0;0.0;0.0;both;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;4;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.0;0.0;0.0;none;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.0;0.0;0.0;both;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.0;0.0;0.0;none;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.0;0.0;0.0;both;none;4707.10;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;2.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1509.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1509.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1509.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1509.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1509.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1509.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1509.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1509.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1020.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1020.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1020.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1020.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1020.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1020.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1020.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1020.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.0;0.0;0.0;none;none;1666.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;3;317;ambulatory;1.0;0.0;0.0;1.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.0;0.0;0.0;both;none;1666.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;3;317;ambulatory;1.0;0.0;0.0;1.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.0;0.0;0.0;none;none;1666.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;4;317;ambulatory;1.0;0.0;0.0;1.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.0;0.0;0.0;both;none;1666.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;4;317;ambulatory;1.0;0.0;0.0;1.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1093.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1093.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1093.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1093.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;13.41;0.0;0.0;none;none;7680529800386;0.0;1.0;0.0;0.0;self_employed;true;0.15;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;89.4;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;13.41;0.0;0.0;both;none;7680529800386;0.0;1.0;0.0;0.0;self_employed;true;0.15;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;89.4;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;13.41;0.0;0.0;none;none;7680529800386;0.0;1.0;0.0;0.0;self_employed;true;0.15;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;89.4;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;13.41;0.0;0.0;both;none;7680529800386;0.0;1.0;0.0;0.0;self_employed;true;0.15;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;89.4;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;13.41;0.0;0.0;none;none;7680529800386;0.0;1.0;0.0;0.0;self_employed;true;0.15;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;89.4;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;13.41;0.0;0.0;both;none;7680529800386;0.0;1.0;0.0;0.0;self_employed;true;0.15;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;89.4;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.98;0.0;0.0;none;none;7680151590587;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M200;1;402;ambulatory;1.0;0.0;0.0;34.9;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.98;0.0;0.0;both;none;7680151590587;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M200;1;402;ambulatory;1.0;0.0;0.0;34.9;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1341.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1341.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1341.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1341.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.8;0.0;0.0;none;none;1479.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.8;0.0;0.0;both;none;1479.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.8;0.0;0.0;none;none;1479.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.8;0.0;0.0;both;none;1479.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.8;0.0;0.0;none;none;1479.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.8;0.0;0.0;both;none;1479.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.8;0.0;0.0;none;none;1479.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.8;0.0;0.0;both;none;1479.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1574.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1574.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1574.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1574.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;47.54;0.0;0.0;none;none;7680563840034;0.0;1.0;0.0;0.0;self_employed;true;0.195;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;243.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;47.54;0.0;0.0;both;none;7680563840034;0.0;1.0;0.0;0.0;self_employed;true;0.195;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;243.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;46.32;0.0;0.0;none;none;7680563840034;0.0;1.0;0.0;0.0;self_employed;true;0.19;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;243.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;46.32;0.0;0.0;both;none;7680563840034;0.0;1.0;0.0;0.0;self_employed;true;0.19;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;243.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;47.78;0.0;0.0;none;none;7680563840034;0.0;1.0;0.0;0.0;self_employed;true;0.196;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;243.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;47.78;0.0;0.0;both;none;7680563840034;0.0;1.0;0.0;0.0;self_employed;true;0.196;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;243.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;47.54;0.0;0.0;none;none;7680563840034;0.0;1.0;0.0;0.0;self_employed;true;0.195;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;243.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;47.54;0.0;0.0;both;none;7680563840034;0.0;1.0;0.0;0.0;self_employed;true;0.195;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;243.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1406.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1406.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1406.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1406.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.6;0.0;0.0;none;none;4701.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;4;317;ambulatory;1.0;0.0;0.0;6.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.6;0.0;0.0;both;none;4701.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;4;317;ambulatory;1.0;0.0;0.0;6.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.6;0.0;0.0;none;none;4701.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;2;317;ambulatory;1.0;0.0;0.0;6.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.6;0.0;0.0;both;none;4701.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;2;317;ambulatory;1.0;0.0;0.0;6.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.6;0.0;0.0;none;none;4701.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;6.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.6;0.0;0.0;both;none;4701.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;6.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.6;0.0;0.0;none;none;4701.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;6.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.6;0.0;0.0;both;none;4701.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;6.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.6;0.0;0.0;none;none;4701.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;3;317;ambulatory;1.0;0.0;0.0;6.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.6;0.0;0.0;both;none;4701.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;3;317;ambulatory;1.0;0.0;0.0;6.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.6;0.0;0.0;none;none;4701.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;5;317;ambulatory;1.0;0.0;0.0;6.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.6;0.0;0.0;both;none;4701.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M100;5;317;ambulatory;1.0;0.0;0.0;6.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.95;0.0;0.0;none;none;7680355010294;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;9.75;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.95;0.0;0.0;both;none;7680355010294;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;9.75;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.95;0.0;0.0;none;none;7680355010294;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;9.75;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.95;0.0;0.0;both;none;7680355010294;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;9.75;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;22.18;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.125;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;177.44;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;22.18;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.125;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;177.44;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.4;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;4.4;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.4;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;4.4;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;20.64;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.167;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;123.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;20.64;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.167;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;123.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.86;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;24.3;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.86;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;24.3;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;5.76;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.028;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;205.56;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;5.76;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.028;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;205.56;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;8.67;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.056;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;154.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;8.67;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.056;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;154.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;3.37;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.028;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;120.24;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;3.37;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.028;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;120.24;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;8.41;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.056;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;150.12;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;8.41;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.056;0.0;0.0;M200;1;940;ambulatory;1.0;0.0;0.0;150.12;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;7.4;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.083;0.0;0.0;M100;4;940;ambulatory;1.0;0.0;0.0;89.16;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;7.4;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.083;0.0;0.0;M100;4;940;ambulatory;1.0;0.0;0.0;89.16;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.25;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;4;940;ambulatory;1.0;0.0;0.0;31.25;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.25;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;4;940;ambulatory;1.0;0.0;0.0;31.25;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;7.4;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.083;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;89.16;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;7.4;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.083;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;89.16;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.85;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;34.25;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.85;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;34.25;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.25;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;31.25;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.25;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;31.25;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;9.15;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;45.75;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;9.15;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;45.75;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.25;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;31.25;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.25;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;31.25;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;9.15;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;45.75;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;9.15;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;45.75;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.33;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.002;0.0;0.0;M100;5;940;ambulatory;1.0;0.0;0.0;2164.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.33;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.002;0.0;0.0;M100;5;940;ambulatory;1.0;0.0;0.0;2164.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;7.4;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.083;0.0;0.0;M100;3;940;ambulatory;1.0;0.0;0.0;89.16;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;7.4;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.083;0.0;0.0;M100;3;940;ambulatory;1.0;0.0;0.0;89.16;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;7.4;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.083;0.0;0.0;M100;5;940;ambulatory;1.0;0.0;0.0;89.16;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;7.4;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.083;0.0;0.0;M100;5;940;ambulatory;1.0;0.0;0.0;89.16;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.25;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;5;940;ambulatory;1.0;0.0;0.0;31.25;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.25;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;5;940;ambulatory;1.0;0.0;0.0;31.25;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.85;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;34.25;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.85;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;34.25;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;9.15;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;45.75;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;9.15;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;45.75;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.25;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;31.25;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.25;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;31.25;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;9.15;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;45.75;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;9.15;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;45.75;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;6.25;0.0;0.0;none;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;31.25;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;6.25;0.0;0.0;both;none;41010;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;31.25;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.08;0.0;0.0;none;none;7680295542268;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M200;1;402;ambulatory;1.0;0.0;0.0;41.66;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.08;0.0;0.0;both;none;7680295542268;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M200;1;402;ambulatory;1.0;0.0;0.0;41.66;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.08;0.0;0.0;none;none;7680295542268;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;5;402;ambulatory;1.0;0.0;0.0;41.66;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.08;0.0;0.0;both;none;7680295542268;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;5;402;ambulatory;1.0;0.0;0.0;41.66;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;515.0;0.0;0.0;none;none;39.1504.00.05;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M850;50;3;ambulatory;1.0;0.0;0.0;515.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;515.0;0.0;0.0;both;none;39.1504.00.05;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M850;50;3;ambulatory;1.0;0.0;0.0;515.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.04;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;4;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.04;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;4;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;8.61;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.08;0.0;0.0;M100;4;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;8.61;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.08;0.0;0.0;M100;4;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;12.92;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.12;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;12.92;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.12;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.04;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.04;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;8.61;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.08;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;8.61;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.08;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.04;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.04;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.04;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.04;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;8.61;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.08;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;8.61;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.08;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.04;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;3;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.04;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;3;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;8.61;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.08;0.0;0.0;M100;5;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;8.61;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.08;0.0;0.0;M100;5;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.04;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;5;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.04;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;5;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;21.53;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;21.53;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.2;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.04;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.04;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;2;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;8.61;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.08;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;8.61;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.08;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.04;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.04;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.04;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.04;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.004;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;260.41;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;8.61;0.0;0.0;none;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.08;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;8.61;0.0;0.0;both;none;40600;0.0;1.0;0.0;0.0;self_employed;true;0.08;0.0;0.0;M100;1;940;ambulatory;1.0;0.0;0.0;107.67;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1518.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1518.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1518.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1518.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1518.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1518.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;135.08;0.0;0.0;none;none;7680535570310;0.0;1.0;0.0;0.0;self_employed;false;0.286;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;472.31;0.0;0.0;false;2.5;0.0;0");
+            "45;male;disease;135.08;0.0;0.0;both;none;7680535570310;0.0;1.0;0.0;0.0;self_employed;false;0.286;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;472.31;0.0;0.0;false;2.5;0.0;0");
       expectedContent.add(
-            "45;male;disease;132.25;0.0;0.0;none;none;7680535570310;0.0;1.0;0.0;0.0;self_employed;false;0.28;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;472.31;0.0;0.0;false;2.5;0.0;0");
+            "45;male;disease;132.25;0.0;0.0;both;none;7680535570310;0.0;1.0;0.0;0.0;self_employed;false;0.28;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;472.31;0.0;0.0;false;2.5;0.0;0");
       expectedContent.add(
-            "45;male;disease;130.83;0.0;0.0;none;none;7680535570310;0.0;1.0;0.0;0.0;self_employed;false;0.277;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;472.31;0.0;0.0;false;2.5;0.0;0");
+            "45;male;disease;130.83;0.0;0.0;both;none;7680535570310;0.0;1.0;0.0;0.0;self_employed;false;0.277;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;472.31;0.0;0.0;false;2.5;0.0;0");
       expectedContent.add(
-            "45;male;disease;131.3;0.0;0.0;none;none;7680535570310;0.0;1.0;0.0;0.0;self_employed;false;0.278;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;472.31;0.0;0.0;false;2.5;0.0;0");
+            "45;male;disease;131.3;0.0;0.0;both;none;7680535570310;0.0;1.0;0.0;0.0;self_employed;false;0.278;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;472.31;0.0;0.0;false;2.5;0.0;0");
       expectedContent.add(
-            "45;male;disease;136.97;0.0;0.0;none;none;7680535570310;0.0;1.0;0.0;0.0;self_employed;false;0.29;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;472.31;0.0;0.0;false;2.5;0.0;0");
+            "45;male;disease;136.97;0.0;0.0;both;none;7680535570310;0.0;1.0;0.0;0.0;self_employed;false;0.29;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;472.31;0.0;0.0;false;2.5;0.0;0");
       expectedContent.add(
-            "45;male;disease;131.3;0.0;0.0;none;none;7680535570310;0.0;1.0;0.0;0.0;self_employed;false;0.278;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;472.31;0.0;0.0;false;2.5;0.0;0");
+            "45;male;disease;131.3;0.0;0.0;both;none;7680535570310;0.0;1.0;0.0;0.0;self_employed;false;0.278;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;472.31;0.0;0.0;false;2.5;0.0;0");
       expectedContent.add(
-            "45;male;disease;500.0;0.0;0.0;none;none;39.1507.00.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M850;50;3;ambulatory;1.0;0.0;0.0;500.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;500.0;0.0;0.0;both;none;39.1507.00.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M850;50;3;ambulatory;1.0;0.0;0.0;500.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;10.0;0.0;0.0;none;none;1245.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;10.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;10.0;0.0;0.0;both;none;1245.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;10.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;10.0;0.0;0.0;none;none;1245.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;10.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;10.0;0.0;0.0;both;none;1245.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;10.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;0.84;0.0;0.0;none;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M100;4;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;0.84;0.0;0.0;both;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M100;4;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;0.84;0.0;0.0;none;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M100;2;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;0.84;0.0;0.0;both;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M100;2;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.67;0.0;0.0;none;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.1;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.67;0.0;0.0;both;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.1;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;0.84;0.0;0.0;none;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;0.84;0.0;0.0;both;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;0.84;0.0;0.0;none;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M100;3;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;0.84;0.0;0.0;both;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M100;3;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.67;0.0;0.0;none;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.1;0.0;0.0;M100;5;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.67;0.0;0.0;both;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.1;0.0;0.0;M100;5;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;0.84;0.0;0.0;none;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M100;2;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;0.84;0.0;0.0;both;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M100;2;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;1.67;0.0;0.0;none;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.1;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;1.67;0.0;0.0;both;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.1;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;0.84;0.0;0.0;none;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;0.84;0.0;0.0;both;none;7680295547072;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;16.7;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;9.0;0.0;0.0;none;none;1718.10;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;9.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;9.0;0.0;0.0;both;none;1718.10;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;9.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.61;0.0;0.0;none;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.61;0.0;0.0;both;none;7612929521271;0.0;1.0;0.0;0.0;self_employed;true;0.05;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;92.17;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;7.54;0.0;0.0;none;none;7612929506636;0.0;1.0;0.0;0.0;self_employed;true;0.125;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;60.3;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;7.54;0.0;0.0;both;none;7612929506636;0.0;1.0;0.0;0.0;self_employed;true;0.125;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;60.3;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;7.54;0.0;0.0;none;none;7612929506636;0.0;1.0;0.0;0.0;self_employed;true;0.125;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;60.3;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;7.54;0.0;0.0;both;none;7612929506636;0.0;1.0;0.0;0.0;self_employed;true;0.125;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;60.3;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;34.95;0.0;0.0;none;none;7680471620766;0.0;1.0;0.0;0.0;self_employed;false;1.0;0.0;0.0;M990;5;402;ambulatory;1.0;0.0;0.0;34.95;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;34.95;0.0;0.0;both;none;7680471620766;0.0;1.0;0.0;0.0;self_employed;false;1.0;0.0;0.0;M990;5;402;ambulatory;1.0;0.0;0.0;34.95;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.5;0.0;0.0;none;none;7680318900631;0.0;1.0;0.0;0.0;self_employed;true;0.02;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;224.9;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.5;0.0;0.0;both;none;7680318900631;0.0;1.0;0.0;0.0;self_employed;true;0.02;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;224.9;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.5;0.0;0.0;none;none;7680318900631;0.0;1.0;0.0;0.0;self_employed;true;0.02;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;224.9;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.5;0.0;0.0;both;none;7680318900631;0.0;1.0;0.0;0.0;self_employed;true;0.02;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;224.9;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;15.45;8.65;6.8;none;none;00.0020;21.0;0.0;1.0;1.0;employee;true;1.0;1.0;1.0;none;1;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;0");
+            "45;male;disease;15.45;8.65;6.8;both;none;00.0020;21.0;0.0;1.0;1.0;employee;true;1.0;1.0;1.0;none;1;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;0");
       expectedContent.add(
             "45;male;disease;15.45;8.65;6.8;both;none;00.0020;21.0;0.0;1.0;1.0;employee;true;1.0;1.0;1.0;M200;3;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;true;0.0;0.0;0");
       expectedContent.add(
@@ -652,75 +751,75 @@ class XMLInvoiceContentParserTest {
       expectedContent.add(
             "45;male;disease;30.9;17.3;13.6;both;none;00.0020;21.0;0.0;1.0;1.0;self_employed;true;2.0;1.0;1.0;M100;3;1;stationary;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1027.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1027.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.5;0.0;0.0;none;none;1027.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.5;0.0;0.0;both;none;1027.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.5;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;3.2;0.0;0.0;none;none;1207.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;3.2;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;3.2;0.0;0.0;both;none;1207.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;3.2;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;3.2;0.0;0.0;none;none;1207.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;3.2;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;3.2;0.0;0.0;both;none;1207.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;3.2;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;3.2;0.0;0.0;none;none;1207.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;3.2;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;3.2;0.0;0.0;both;none;1207.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;3.2;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;3.2;0.0;0.0;none;none;1207.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;3.2;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;3.2;0.0;0.0;both;none;1207.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;3.2;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.8;0.0;0.0;none;none;1223.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.8;0.0;0.0;both;none;1223.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;2.8;0.0;0.0;none;none;1223.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;2.8;0.0;0.0;both;none;1223.00;0.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M000;1;317;ambulatory;1.0;0.0;0.0;2.8;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;5.52;0.0;0.0;none;none;7680434070317;0.0;1.0;0.0;0.0;self_employed;true;0.067;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;82.35;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;5.52;0.0;0.0;both;none;7680434070317;0.0;1.0;0.0;0.0;self_employed;true;0.067;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;82.35;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;5.52;0.0;0.0;none;none;7680434070317;0.0;1.0;0.0;0.0;self_employed;true;0.067;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;82.35;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;5.52;0.0;0.0;both;none;7680434070317;0.0;1.0;0.0;0.0;self_employed;true;0.067;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;82.35;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;27.42;0.0;0.0;none;none;7680434070317;0.0;1.0;0.0;0.0;self_employed;true;0.333;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;82.35;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;27.42;0.0;0.0;both;none;7680434070317;0.0;1.0;0.0;0.0;self_employed;true;0.333;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;82.35;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;10.95;0.0;0.0;none;none;7680434070317;0.0;1.0;0.0;0.0;self_employed;true;0.133;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;82.35;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;10.95;0.0;0.0;both;none;7680434070317;0.0;1.0;0.0;0.0;self_employed;true;0.133;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;82.35;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;27.42;0.0;0.0;none;none;7680434070317;0.0;1.0;0.0;0.0;self_employed;true;0.333;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;82.35;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;27.42;0.0;0.0;both;none;7680434070317;0.0;1.0;0.0;0.0;self_employed;true;0.333;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;82.35;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;14.6;0.0;0.0;none;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;14.6;0.0;0.0;both;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;14.6;0.0;0.0;none;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;14.6;0.0;0.0;both;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;14.6;0.0;0.0;none;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;3;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;14.6;0.0;0.0;both;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;3;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;14.6;0.0;0.0;none;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;14.6;0.0;0.0;both;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;14.6;0.0;0.0;none;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;14.6;0.0;0.0;both;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;14.6;0.0;0.0;none;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;4;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;14.6;0.0;0.0;both;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;4;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;14.6;0.0;0.0;none;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;14.6;0.0;0.0;both;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;14.6;0.0;0.0;none;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;14.6;0.0;0.0;both;none;1374.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;14.6;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.0;0.0;0.0;none;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.0;0.0;0.0;both;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.0;0.0;0.0;none;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.0;0.0;0.0;both;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.0;0.0;0.0;none;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;3;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.0;0.0;0.0;both;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;3;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.0;0.0;0.0;none;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.0;0.0;0.0;both;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.0;0.0;0.0;none;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.0;0.0;0.0;both;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.0;0.0;0.0;none;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;4;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.0;0.0;0.0;both;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;4;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.0;0.0;0.0;none;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.0;0.0;0.0;both;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;1;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;4.0;0.0;0.0;none;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;4.0;0.0;0.0;both;none;4707.00;30.0;1.0;0.0;0.0;self_employed;true;1.0;0.0;0.0;M990;2;317;ambulatory;1.0;0.0;0.0;4.0;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;0.31;0.0;0.0;none;none;7680475040157;0.0;1.0;0.0;0.0;self_employed;true;0.125;0.0;0.0;M000;2;402;ambulatory;1.0;0.0;0.0;2.45;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;0.31;0.0;0.0;both;none;7680475040157;0.0;1.0;0.0;0.0;self_employed;true;0.125;0.0;0.0;M000;2;402;ambulatory;1.0;0.0;0.0;2.45;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;12.79;0.0;0.0;none;none;7680494564825;0.0;1.0;0.0;0.0;self_employed;true;0.1;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;127.9;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;12.79;0.0;0.0;both;none;7680494564825;0.0;1.0;0.0;0.0;self_employed;true;0.1;0.0;0.0;M100;1;402;ambulatory;1.0;0.0;0.0;127.9;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;91.79;0.0;0.0;none;none;7680254420835;0.0;1.0;0.0;0.0;self_employed;true;2.312;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;39.7;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;91.79;0.0;0.0;both;none;7680254420835;0.0;1.0;0.0;0.0;self_employed;true;2.312;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;39.7;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;92.22;0.0;0.0;none;none;7680254420835;0.0;1.0;0.0;0.0;self_employed;true;2.323;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;39.7;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;92.22;0.0;0.0;both;none;7680254420835;0.0;1.0;0.0;0.0;self_employed;true;2.323;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;39.7;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;118.73;0.0;0.0;none;none;7680503580709;0.0;1.0;0.0;0.0;self_employed;true;0.73;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;162.65;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;118.73;0.0;0.0;both;none;7680503580709;0.0;1.0;0.0;0.0;self_employed;true;0.73;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;162.65;0.0;0.0;false;0.0;0.0;0");
       expectedContent.add(
-            "45;male;disease;120.36;0.0;0.0;none;none;7680503580709;0.0;1.0;0.0;0.0;self_employed;true;0.74;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;162.65;0.0;0.0;false;0.0;0.0;0");
+            "45;male;disease;120.36;0.0;0.0;both;none;7680503580709;0.0;1.0;0.0;0.0;self_employed;true;0.74;0.0;0.0;M990;1;402;ambulatory;1.0;0.0;0.0;162.65;0.0;0.0;false;0.0;0.0;0");
 
       return expectedContent;
    }
@@ -762,18 +861,18 @@ class XMLInvoiceContentParserTest {
       expectedContent.add("@attribute vat_rate numeric");
       expectedContent.add("@attribute cost_fraction numeric");
       expectedContent.add("@attribute service_attributes numeric");
-      expectedContent.add("@attribute classification {declined,accepted,control}");
+      expectedContent.add("@attribute classification {Freigegeben,InBearbeitung,Zurueckgewiesen}");
       expectedContent.add("@data");
       expectedContent.add(
-            "45,male,disease,15.45,8.65,6.8,none,none,00.0020,21.0,0.0,1.0,1.0,employee,true,1.0,1.0,1.0,none,1,1,ambulatory,0.0,0.83,0.83,0.0,10.42,8.19,false,0.0,0.0,0,only4testing");
+            "45,male,disease,15.45,8.65,6.8,both,none,00.0020,21.0,0.0,1.0,1.0,employee,true,1.0,1.0,1.0,none,1,1,ambulatory,0.0,0.83,0.83,0.0,10.42,8.19,false,0.0,0.0,0,Freigegeben");
       expectedContent.add(
-            "45,male,disease,15.45,8.65,6.8,both,none,00.0020,21.0,0.0,1.0,1.0,employee,true,1.0,1.0,1.0,M200,3,1,ambulatory,0.0,0.83,0.83,0.0,10.42,8.19,true,0.0,0.0,0,only4testing");
+            "45,male,disease,15.45,8.65,6.8,both,none,00.0020,21.0,0.0,1.0,1.0,employee,true,1.0,1.0,1.0,M200,3,1,ambulatory,0.0,0.83,0.83,0.0,10.42,8.19,true,0.0,0.0,0,Freigegeben");
       expectedContent.add(
-            "45,male,disease,30.9,17.3,13.6,both,none,00.0020,21.0,0.0,1.0,1.0,employee,true,2.0,1.0,1.0,M990,2,1,ambulatory,0.0,0.83,0.83,0.0,10.42,8.19,false,0.0,0.0,0,only4testing");
+            "45,male,disease,30.9,17.3,13.6,both,none,00.0020,21.0,0.0,1.0,1.0,employee,true,2.0,1.0,1.0,M990,2,1,ambulatory,0.0,0.83,0.83,0.0,10.42,8.19,false,0.0,0.0,0,Freigegeben");
       expectedContent.add(
-            "45,male,disease,15.45,8.65,6.8,both,none,00.0020,21.0,0.0,1.0,1.0,employee,true,1.0,1.0,1.0,M100,5,1,ambulatory,0.0,0.83,0.83,0.0,10.42,8.19,true,0.0,0.0,0,only4testing");
+            "45,male,disease,15.45,8.65,6.8,both,none,00.0020,21.0,0.0,1.0,1.0,employee,true,1.0,1.0,1.0,M100,5,1,ambulatory,0.0,0.83,0.83,0.0,10.42,8.19,true,0.0,0.0,0,Freigegeben");
       expectedContent.add(
-            "45,male,disease,30.9,17.3,13.6,both,none,00.0020,21.0,0.0,1.0,1.0,self_employed,true,2.0,1.0,1.0,M100,3,1,stationary,0.0,0.83,0.83,0.0,10.42,8.19,false,0.0,0.0,0,only4testing");
+            "45,male,disease,30.9,17.3,13.6,both,none,00.0020,21.0,0.0,1.0,1.0,self_employed,true,2.0,1.0,1.0,M100,3,1,stationary,0.0,0.83,0.83,0.0,10.42,8.19,false,0.0,0.0,0,Freigegeben");
       return expectedContent;
    }
 
@@ -783,7 +882,7 @@ class XMLInvoiceContentParserTest {
          expectedContent.add(
                "XML-File;birthdate;age;gender;treatment_reason;treatment_date_begin;treatment_type;amount;amount_mt;amount_tt;billing_role;body_location;code;date_begin;date_end;treatment_duration;external_factor;external_factor_mt;external_factor_tt;medical_role;name;obligation;provider_id;quantity;record_id;ref_code;responsible_id;scale_factor_mt;scale_factor_tt;section_code;session;tariff_type;treatment;unit_factor;unit_factor_mt;unit_factor_tt;unit;unit_mt;unit_tt;validate;vat_rate;cost_fraction;remark;service_attributes");
          expectedContent.add(
-               "test_invoice.xml;1974-01-07;45;male;disease;2019-11-08;ambulatory;15.45;8.65;6.8;none;none;00.0020;2019-12-11;2019-12-16;21.0;0.0;1.0;1.0;employee;-;true;7601002000208;1.0;3400.0;00.0010;7601000368706;1.0;1.0;none;1;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;-;0");
+               "test_invoice.xml;1974-01-07;45;male;disease;2019-11-08;ambulatory;15.45;8.65;6.8;both;none;00.0020;2019-12-11;2019-12-16;21.0;0.0;1.0;1.0;employee;-;true;7601002000208;1.0;3400.0;00.0010;7601000368706;1.0;1.0;none;1;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;-;0");
          expectedContent.add(
                "test_invoice.xml;1974-01-07;45;male;disease;2019-11-08;ambulatory;15.45;8.65;6.8;both;none;00.0020;2019-12-11;2019-12-17;21.0;0.0;1.0;1.0;employee;+ Konsultation, jede weiteren 5 Min. (Konsultationszuschlag);true;7601002000208;1.0;6000.0;00.0010;7601000368706;1.0;1.0;M200;3;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;true;0.0;0.0;-;0");
          expectedContent.add(
@@ -794,7 +893,7 @@ class XMLInvoiceContentParserTest {
                "test_invoice.xml;1974-01-07;45;male;disease;2019-11-08;ambulatory;30.9;17.3;13.6;both;none;00.0020;2020-01-04;2020-01-12;21.0;0.0;1.0;1.0;self_employed;+ Konsultation, jede weiteren 5 Min. (Konsultationszuschlag);true;7601000532589;2.0;23500.0;00.0010;7601000767387;1.0;1.0;M100;3;1;stationary;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;-;0");
       } else {
          expectedContent.add(
-               "45;male;disease;15.45;8.65;6.8;none;none;00.0020;21.0;0.0;1.0;1.0;employee;true;1.0;1.0;1.0;none;1;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;0");
+               "45;male;disease;15.45;8.65;6.8;both;none;00.0020;21.0;0.0;1.0;1.0;employee;true;1.0;1.0;1.0;none;1;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;0");
          expectedContent.add(
                "45;male;disease;15.45;8.65;6.8;both;none;00.0020;21.0;0.0;1.0;1.0;employee;true;1.0;1.0;1.0;M200;3;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;true;0.0;0.0;0");
          expectedContent.add(
@@ -807,14 +906,22 @@ class XMLInvoiceContentParserTest {
       return expectedContent;
    }
 
+   private static List<String> getExpectedMedicalRoleTestContent() {
+      return Collections.singletonList(
+            "45;male;disease;15.45;8.65;6.8;both;none;00.0020;5.0;0.0;1.0;1.0;self_employed;true;1.0;1.0;1.0;none;1;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;0");
+   }
+
    private static List<String> getExpectedContent_Treatment() {
       List<String> expectedContent = new LinkedList<>();
       expectedContent.add(
             "XML-File;birthdate;age;gender;treatment_reason;treatment_date_begin;treatment_type;amount;amount_mt;amount_tt;billing_role;body_location;code;date_begin;date_end;treatment_duration;external_factor;external_factor_mt;external_factor_tt;medical_role;name;obligation;provider_id;quantity;record_id;ref_code;responsible_id;scale_factor_mt;scale_factor_tt;section_code;session;tariff_type;treatment;unit_factor;unit_factor_mt;unit_factor_tt;unit;unit_mt;unit_tt;validate;vat_rate;cost_fraction;remark;service_attributes");
       expectedContent.add(
-            "test_1_ambulatory_invoice.xml;1955-07-16;64;male;disease;2019-11-08;ambulatory;15.45;8.65;6.8;none;none;00.0020;2019-12-11;2019-12-16;5.0;0.0;1.0;1.0;employee;-;true;7601002000208;1.0;3400.0;00.0010;7601000368706;1.0;1.0;none;1;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;-;0");
+            "test_1_ambulatory_invoiceMissingValue.xml;1955-07-16;64;male;disease;2019-11-08;ambulatory;15.45;8.65;6.8;both;none;00.0020;2019-12-11;2019-12-16;5.0;0.0;1.0;1.0;employee;-;true;7601002000208;1.0;3400.0;00.0010;7601000368706;1.0;1.0;none;1;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;-;0");
+      // I know there is a mismatch with stationary (defined in invoice:stationary and ambulatory (defined within services data) but I wanna make sure the right one is determined
       expectedContent.add(
-            "test_2_stationary_invoice.xml;1955-07-16;64;male;disease;2019-11-08;stationary;15.45;8.65;6.8;none;none;00.0020;2019-12-11;2019-12-16;5.0;0.0;1.0;1.0;employee;-;true;7601002000208;1.0;3400.0;00.0010;7601000368706;1.0;1.0;none;1;1;stationary;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;-;0");
+            "test_1_ambulatory_invoiceWrongValue.xml;1955-07-16;64;male;disease;2019-11-08;stationary;15.45;8.65;6.8;both;none;00.0020;2019-12-11;2019-12-16;5.0;0.0;1.0;1.0;employee;-;true;7601002000208;1.0;3400.0;00.0010;7601000368706;1.0;1.0;none;1;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;-;0");
+      expectedContent.add(
+            "test_2_stationary_invoice.xml;1955-07-16;64;male;disease;2019-11-08;stationary;15.45;8.65;6.8;both;none;00.0020;2019-12-11;2019-12-16;5.0;0.0;1.0;1.0;employee;-;true;7601002000208;1.0;3400.0;00.0010;7601000368706;1.0;1.0;none;1;1;ambulatory;0.0;0.83;0.83;0.0;10.42;8.19;false;0.0;0.0;-;0");
       return expectedContent;
    }
 

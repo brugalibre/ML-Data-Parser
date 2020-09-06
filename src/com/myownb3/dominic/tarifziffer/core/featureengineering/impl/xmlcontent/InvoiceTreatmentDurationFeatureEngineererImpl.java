@@ -26,7 +26,7 @@ public class InvoiceTreatmentDurationFeatureEngineererImpl extends AbstractFeatu
    @Override
    public XMLContent doFeatureIngeneering(XMLContent xmlContent) {
       XMLContent headerDataXMLContent = buildXMLContentWithHeaderContent(xmlContent);
-      Map<String, List<LineContent>> tarifziffer2LineContentsMap = buildTarifziffer2LineContantMap(xmlContent);
+      Map<String, List<LineContent>> tarifziffer2LineContentsMap = mapTarifziffer2LineContant(xmlContent);
       return tarifziffer2LineContentsMap.entrySet()
             .stream()
             .map(Entry::getValue)
@@ -54,7 +54,7 @@ public class InvoiceTreatmentDurationFeatureEngineererImpl extends AbstractFeatu
       for (LineContent lineContent : lineContents4Tarifziffer) {
          DoubleMutableInvoiceAttr doubleMutableInvoiceAttr = getDurationValueAttr(lineContent);
          doubleMutableInvoiceAttr.setValue(sumDuration);
-         logFeatureEngineering(doubleMutableInvoiceAttr, sumDuration);
+         logFeatureEngineering(getFileName(lineContent), doubleMutableInvoiceAttr, sumDuration);
       }
       return lineContents4Tarifziffer;
    }
@@ -75,7 +75,7 @@ public class InvoiceTreatmentDurationFeatureEngineererImpl extends AbstractFeatu
    /*
     *  We want to map all 'service-data'-lines (which contains a duration attribute) to their corresponding tariffiziffer
     */
-   private Map<String, List<LineContent>> buildTarifziffer2LineContantMap(XMLContent xmlContent) {
+   private Map<String, List<LineContent>> mapTarifziffer2LineContant(XMLContent xmlContent) {
       Map<String, List<LineContent>> tarifziffer2LineContantMap = new HashMap<>();
       List<LineContent> filterRelevantContentLines = getServiceLineContentWithDurationAttr(xmlContent);
       for (LineContent lineContent : filterRelevantContentLines) {
@@ -98,11 +98,17 @@ public class InvoiceTreatmentDurationFeatureEngineererImpl extends AbstractFeatu
    }
 
    private String getCodeValue(LineContent lineContent) {
-      InvoiceAttr invoiceAttr = findAttribute4Name(lineContent.getInvoiceAttrs(), InvoiceXMLConstants.RECORD_TARMED_TAG_CODE);
+      InvoiceAttr invoiceAttr =
+            findAttributeByName(lineContent.getInvoiceAttrs(), InvoiceXMLConstants.RECORD_TARMED_TAG_CODE);
       return invoiceAttr.getValue();
    }
 
    private DoubleMutableInvoiceAttr getDurationValueAttr(LineContent lineContent) {
-      return (DoubleMutableInvoiceAttr) findAttribute4Name(lineContent.getInvoiceAttrs(), InvoiceXMLConstants.TREATMENT_DATA_DURATION);
+      return findAttributeByName(lineContent.getInvoiceAttrs(), InvoiceXMLConstants.TREATMENT_DATA_DURATION, DoubleMutableInvoiceAttr.class);
+   }
+
+   private static String getFileName(LineContent lineContent) {
+      return lineContent.getOptionalXMLFileName()
+            .orElse("nA");
    }
 }

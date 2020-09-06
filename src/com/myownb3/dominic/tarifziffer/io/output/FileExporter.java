@@ -11,9 +11,9 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import com.myownb3.dominic.tarifziffer.core.export.InvoiceContentExportContentCollector;
 import com.myownb3.dominic.tarifziffer.io.FileSystemUtil;
 import com.myownb3.dominic.tarifziffer.io.output.exception.FileExportException;
+import com.myownb3.dominic.tarifziffer.logging.LoggerHelper;
 
 
 /**
@@ -25,7 +25,7 @@ public class FileExporter {
    /**
     * The file extension of files to export
     */
-   public static final FileExporter INTANCE = new FileExporter();
+   public static final FileExporter INSTANCE = new FileExporter();
    private static final Logger LOG = Logger.getLogger(FileExporter.class);
 
    private FileExporter() {
@@ -51,29 +51,26 @@ public class FileExporter {
    /**
     * Exports the given list of {@link String} to the Desktop
     * 
-    * @param invoiceExportContentCollector
-    *        the {@link InvoiceContentExportContentCollector} which provides the content information
-    * @param exportDir
-    *        the directory to which the content is exported
+    * @param exportInfo
+    *        the {@link ExportInfo} which provides the content information
     */
-   public void export(InvoiceContentExportContentCollector invoiceExportContentCollector, String exportDir) {
-      List<String> content = invoiceExportContentCollector.collectContent();
-      String fileName = invoiceExportContentCollector.getExportFileName();
-      String fileExtension = invoiceExportContentCollector.getFileExtension();
-      exportInternal(content, evalPath(exportDir, fileName, fileExtension));
+   public void export(ExportInfo exportInfo) {
+      String path = evalPath(exportInfo.getExportDir(), exportInfo.getExportFileName(), exportInfo.getFileExtension());
+      exportInternal(exportInfo.getExportContent(), path);
    }
 
    private void exportInternal(List<String> content, String path) {
-      LOG.info("Start exporting to '" + path);
+      LoggerHelper.INSTANCE.startLogInfo(LOG, "Start exporting '" + content.size() + "' elements to '" + path + "'");
       File file = new File(path);
 
       try (FileWriter writer = new FileWriter(file)) {
          file.createNewFile();
          writeLines(content, writer);
       } catch (IOException e) {
+         LOG.error("Error during exporting file '" + file + "'", e);
          throw new FileExportException(e);
       }
-      LOG.info("Done exporting");
+      LoggerHelper.INSTANCE.endLogInfo(LOG, "Done exporting %s\n");
    }
 
    private static String evalDefaultPath(String fileName, String fileExtension) {
@@ -82,7 +79,7 @@ public class FileExporter {
    }
 
    private static String evalPath(String path, String fileName, String fileExtension) {
-      return path + "\\" + fileName + "." + fileExtension;
+      return path + FileSystemUtil.getDefaultFileSystemSeparator() + fileName + "." + fileExtension;
    }
 
    private void writeLines(List<String> content, FileWriter writer) throws IOException {

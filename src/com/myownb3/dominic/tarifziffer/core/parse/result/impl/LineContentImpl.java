@@ -6,6 +6,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.myownb3.dominic.invoice.attrs.metadata.InvoiceAttr;
 import com.myownb3.dominic.invoice.attrs.metadata.type.ContentType;
@@ -16,11 +20,20 @@ import com.myownb3.dominic.tarifziffer.core.parse.result.LineContent;
 public class LineContentImpl implements LineContent {
 
    private List<InvoiceAttr> invoiceAttrs;
+   private Map<String, InvoiceAttr> invoiceName2InvoiceAttrMap;
+   private String xmlFileName;
+
+   public LineContentImpl(List<? extends InvoiceAttr> invoiceAttrs, String xmlFileName) {
+      requireNonNull(invoiceAttrs);
+      this.xmlFileName = xmlFileName;
+      this.invoiceAttrs = new ArrayList<>(invoiceAttrs);
+      this.invoiceName2InvoiceAttrMap = invoiceAttrs.stream()
+            .collect(Collectors.toMap(InvoiceAttr::getName, Function.identity()));
+      Collections.sort(this.invoiceAttrs, Comparator.comparing(InvoiceAttr::getSequence));
+   }
 
    public LineContentImpl(List<? extends InvoiceAttr> invoiceAttrs) {
-      requireNonNull(invoiceAttrs);
-      this.invoiceAttrs = new ArrayList<>(invoiceAttrs);
-      Collections.sort(this.invoiceAttrs, Comparator.comparing(InvoiceAttr::getSequence));
+      this(invoiceAttrs, null);
    }
 
    @Override
@@ -30,11 +43,8 @@ public class LineContentImpl implements LineContent {
 
    @Override
    public String getValue(String key) {
-      return invoiceAttrs.parallelStream()
-            .filter(invoiceAttr -> invoiceAttr.getName().equals(key))
-            .map(InvoiceAttr::getValue)
-            .findFirst()
-            .orElse(null);
+      InvoiceAttr invoiceAttr = invoiceName2InvoiceAttrMap.get(key);
+      return invoiceAttr != null ? invoiceAttr.getValue() : null;
    }
 
    @Override
@@ -50,5 +60,10 @@ public class LineContentImpl implements LineContent {
    @Override
    public List<InvoiceAttr> getInvoiceAttrs() {
       return Collections.unmodifiableList(invoiceAttrs);
+   }
+
+   @Override
+   public Optional<String> getOptionalXMLFileName() {
+      return Optional.ofNullable(xmlFileName);
    }
 }

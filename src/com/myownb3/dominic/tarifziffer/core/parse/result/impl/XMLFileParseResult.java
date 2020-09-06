@@ -38,7 +38,7 @@ public class XMLFileParseResult {
     * @return a String for an export
     */
    public String createExportMsg() {
-      return xmlName + ContentConstants.ELEMENT_DELIMITER + xmlContent.size() + "\n";
+      return xmlName + ContentConstants.ELEMENT_DELIMITER + xmlContent.size() + System.lineSeparator();
    }
 
    /**

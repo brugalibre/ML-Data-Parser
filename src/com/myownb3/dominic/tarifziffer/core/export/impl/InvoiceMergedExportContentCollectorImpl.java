@@ -1,9 +1,12 @@
 package com.myownb3.dominic.tarifziffer.core.export.impl;
 
+import static com.myownb3.dominic.invoice.util.StringUtil.flattenList;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -17,8 +20,8 @@ import com.myownb3.dominic.tarifziffer.core.parse.result.impl.XMLFileParseResult
 
 public class InvoiceMergedExportContentCollectorImpl extends InvoiceExportContentCollectorImpl {
 
-   public InvoiceMergedExportContentCollectorImpl(List<XMLFileParseResult> result, String fileName, ExportMode exportMode) {
-      super(result, fileName, exportMode);
+   public InvoiceMergedExportContentCollectorImpl(List<XMLFileParseResult> result, ExportMode exportMode, boolean omitHeader) {
+      super(result, exportMode, omitHeader);
    }
 
    @Override
@@ -39,9 +42,26 @@ public class InvoiceMergedExportContentCollectorImpl extends InvoiceExportConten
       StringBuilder stringBuilder = new StringBuilder("File name" + exportMode.getLineDelimiter());
       for (Iterator<String> iterator = allKeys.iterator(); iterator.hasNext();) {
          String key = iterator.next();
-         stringBuilder.append(key + (iterator.hasNext() ? exportMode.getLineDelimiter() : "\n"));
+         stringBuilder.append(key + (iterator.hasNext() ? exportMode.getLineDelimiter() : System.lineSeparator()));
       }
       return Collections.singletonList(stringBuilder.toString());
+   }
+
+   /**
+    * Since we are exporting merged attributes, we don't need the keys.
+    * We simply export the InvoiceAttr-values we have within the LineContent
+    */
+   @Override
+   protected String buildExportLine(List<String> keys, LineContent lineContent, boolean hasNextLine) {
+      return lineContent.getInvoiceAttrs()
+            .parallelStream()
+            .map(addValueAndLineDelimiter())
+            .collect(Collectors.collectingAndThen(Collectors.toList(),
+                  flattenList().andThen(removeLastLineDelimiter(hasNextLine))));
+   }
+
+   private Function<InvoiceAttr, String> addValueAndLineDelimiter() {
+      return invoiceAttr -> invoiceAttr.getValue() + exportMode.getLineDelimiter();
    }
 
    @Override
@@ -69,7 +89,7 @@ public class InvoiceMergedExportContentCollectorImpl extends InvoiceExportConten
    }
 
    private static LineContent evalFirstServiceDataLine(List<XMLFileParseResult> result) {
-      return result.stream()
+      return result.parallelStream()
             .map(XMLFileParseResult::getContent)
             .flatMap(List::stream)
             .filter(LineContent::isServicesContent)
