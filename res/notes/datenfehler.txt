@@ -1,0 +1,12 @@
+Datenfehler bzw. abweichende Datentypen:
+
+Mindestens ein Eintrag im XML ANO_882852465e59082
+Wert 'W00' für Attribut 'tariff_type' konnte nicht geparst werden!
+Wert 'W00' für Attribut 'tariff_type' konnte nicht geparst werden!
+Wert 'W00' für Attribut 'tariff_type' konnte nicht geparst werden!
+Wert 'W00' für Attribut 'tariff_type' konnte nicht geparst werden!
+Wert 'W00' für Attribut 'tariff_type' konnte nicht geparst werden!
+Wert 'T33' für Attribut 'tariff_type' konnte nicht geparst werden!
+Wert 'T33' für Attribut 'tariff_type' konnte nicht geparst werden!
+Wert 'T33' für Attribut 'tariff_type' konnte nicht geparst werden!
+Wert 'T33' für Attribut 'tariff_type' konnte nicht geparst werden!
