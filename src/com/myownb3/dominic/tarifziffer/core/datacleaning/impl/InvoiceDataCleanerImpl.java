@@ -157,8 +157,23 @@ public class InvoiceDataCleanerImpl implements InvoiceDataCleaner {
       if (isServicesAttrDateEnd(invoiceAttr)) {
          // Obviously it's normal that the end-date is missing. In cases like that, the end-date is equal than the begin date
          return lineContent.getValue(InvoiceAttrs.DATE_BEGIN.getName());
+      } else if (isTarifTypeValue(invoiceAttr)) {
+         handleMissingTarifTypeValue(lineContent);
       }
       return invoiceAttr.getDefaultValue();
+   }
+
+   private static void handleMissingTarifTypeValue(LineContent lineContent) {
+      String xmlFileName = lineContent.getOptionalXMLFileName()
+            .orElse("No file name provided :( ");
+      throw new IllegalStateException("Tariff_type without valid value in invoice '" + xmlFileName + "!'");
+   }
+
+   /*
+    * If the tarif_type value is missing, then I'm not really sure how to handly it. So lets throw an exception
+    */
+   private static boolean isTarifTypeValue(InvoiceAttr invoiceAttr) {
+      return invoiceAttr.getName().equals(InvoiceAttrs.TARIFF_TYPE.getName());
    }
 
    private static boolean isServicesAttrDateEnd(InvoiceAttr invoiceAttr) {
